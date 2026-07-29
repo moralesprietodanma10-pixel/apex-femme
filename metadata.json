@@ -1,0 +1,6 @@
+{
+  "name": "APEX FEMME",
+  "description": "Female Soccer Performance & AI Coach SPA app with interactive player card, match tracker, adaptive planner, and gamification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

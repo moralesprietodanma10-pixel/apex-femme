@@ -1,0 +1,368 @@
+@import "tailwindcss";
+
+:root,
+:root[data-mode="dark"] {
+  --bg-app: #0F172A;
+  --bg-header: rgba(15, 23, 42, 0.92);
+  --bg-card: rgba(20, 30, 55, 0.7);
+  --bg-card-solid: #111827;
+  --bg-panel: rgba(17, 24, 45, 0.85);
+  --bg-input: #0d1424;
+  --text-main: #dae2fd;
+  --text-muted: #94A3B8;
+  --border-subtle: rgba(66, 73, 94, 0.4);
+  --border-card: rgba(51, 65, 105, 0.5);
+  --chat-ai-bg: linear-gradient(135deg, #1e293b 0%, #0d1424 100%);
+  --scrollbar-track: #0F172A;
+  --scrollbar-thumb: #1e2a4a;
+  color-scheme: dark;
+}
+
+:root[data-mode="light"] {
+  --bg-app: #f1f5f9;
+  --bg-header: rgba(255, 255, 255, 0.95);
+  --bg-card: rgba(255, 255, 255, 0.88);
+  --bg-card-solid: #ffffff;
+  --bg-panel: rgba(241, 245, 249, 0.95);
+  --bg-input: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --border-subtle: rgba(203, 213, 225, 0.8);
+  --border-card: rgba(203, 213, 225, 0.9);
+  --chat-ai-bg: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  --scrollbar-track: #e2e8f0;
+  --scrollbar-thumb: #cbd5e1;
+  color-scheme: light;
+}
+
+/* ─── DEFAULT THEME: Flash (Yellow) ─────────────────────────── */
+:root {
+  --accent-color: #EAB308;
+  --accent-hover: #FACC15;
+  --accent-glow: rgba(234, 179, 8, 0.45);
+  --accent-glow-soft: rgba(234, 179, 8, 0.18);
+  --accent-text: #1a1000;
+  --theme-name: "flash";
+}
+
+/* ─── THEME 1: Flash ⚡ (Yellow Electric) ──────────────────────── */
+:root[data-theme="flash"],
+[data-theme="flash"] {
+  --accent-color: #EAB308;
+  --accent-hover: #FACC15;
+  --accent-glow: rgba(234, 179, 8, 0.45);
+  --accent-glow-soft: rgba(234, 179, 8, 0.18);
+  --accent-text: #1a1000;
+}
+
+/* ─── THEME 2: Capitán América / Avengers 🛡️ (Rojo Neón Eléctrico) ── */
+:root[data-theme="avengers"],
+[data-theme="avengers"] {
+  --accent-color: #EF4444;
+  --accent-hover: #F87171;
+  --accent-glow: rgba(239, 68, 68, 0.50);
+  --accent-glow-soft: rgba(239, 68, 68, 0.20);
+  --accent-text: #ffffff;
+}
+
+/* ─── THEME 3: Black Widow 🕷️ (Carmesí Neón) ───────────────────── */
+:root[data-theme="widow"],
+[data-theme="widow"] {
+  --accent-color: #E11D48;
+  --accent-hover: #FB7185;
+  --accent-glow: rgba(225, 29, 72, 0.50);
+  --accent-glow-soft: rgba(225, 29, 72, 0.20);
+  --accent-text: #ffffff;
+}
+
+/* ─── THEME 4: Hulk 💚 (Verde Radiactivo) ────────────────────── */
+:root[data-theme="hulk"],
+[data-theme="hulk"] {
+  --accent-color: #22C55E;
+  --accent-hover: #4ADE80;
+  --accent-glow: rgba(34, 197, 94, 0.50);
+  --accent-glow-soft: rgba(34, 197, 94, 0.20);
+  --accent-text: #001a08;
+}
+
+/* ─── THEME 5: Hawkeye 🎯 (Morado Eléctrico) ───────────────────── */
+:root[data-theme="hawkeye"],
+[data-theme="hawkeye"] {
+  --accent-color: #A855F7;
+  --accent-hover: #C084FC;
+  --accent-glow: rgba(168, 85, 247, 0.50);
+  --accent-glow-soft: rgba(168, 85, 247, 0.20);
+  --accent-text: #ffffff;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  transition: background-color 0.25s ease-in-out, color 0.25s ease-in-out;
+}
+
+@layer utilities {
+  .theme-accent-bg {
+    background-color: var(--accent-color) !important;
+    color: var(--accent-text) !important;
+  }
+
+  .theme-accent-bg:hover {
+    background-color: var(--accent-hover) !important;
+  }
+
+  .theme-accent-text {
+    color: var(--accent-color) !important;
+  }
+
+  .theme-accent-border {
+    border-color: var(--accent-color) !important;
+  }
+
+  .theme-accent-glow {
+    box-shadow: 0 0 20px var(--accent-glow) !important;
+  }
+
+  .neon-border {
+    border: 1.5px solid var(--accent-color) !important;
+    box-shadow: 0 0 10px var(--accent-glow), 0 0 20px var(--accent-glow-soft), inset 0 0 8px var(--accent-glow-soft) !important;
+  }
+
+  .neon-glow-text {
+    text-shadow: 0 0 10px var(--accent-glow), 0 0 20px var(--accent-glow-soft);
+  }
+
+  .glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--border-card);
+    transition: background-color 0.25s ease-in-out, border-color 0.25s ease-in-out, transform 0.2s ease-in-out;
+  }
+
+  .glass-card-neon {
+    background: var(--bg-card);
+    backdrop-filter: blur(14px);
+    border: 1.5px solid var(--accent-color) !important;
+    box-shadow: 0 0 14px var(--accent-glow), 0 0 30px var(--accent-glow-soft) !important;
+    transition: all 0.25s ease-in-out;
+  }
+
+  .glass-panel {
+    background: var(--bg-panel);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-subtle);
+    transition: background-color 0.25s ease-in-out, border-color 0.25s ease-in-out;
+  }
+
+  .fut-card-metallic {
+    background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, var(--bg-card-solid) 60%, rgba(0,0,0,0.3) 100%);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 25px var(--accent-glow);
+    border: 2px solid var(--accent-color) !important;
+  }
+
+  .tactical-pitch {
+    background: radial-gradient(circle at center, #15803d 0%, #064e3b 100%);
+    box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .chat-bubble-ai {
+    background: var(--chat-ai-bg);
+    border-left: 3px solid var(--accent-color) !important;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
+
+/* Range sliders styling */
+input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%; height: 8px; cursor: pointer;
+  background: var(--scrollbar-thumb); border-radius: 9999px;
+}
+input[type=range]::-webkit-slider-thumb {
+  border: 3px solid var(--bg-app); height: 24px; width: 24px;
+  border-radius: 50%; background: var(--accent-hover);
+  cursor: pointer; -webkit-appearance: none; margin-top: -8px;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BACKGROUND THEME ANIMATIONS (MODO OSCURO Y MODO CLARO)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Flash: Lightning streaks ──────────────────────────────── */
+@keyframes flash-bolt-1 {
+  0%   { transform: translateX(-120%) translateY(-30%) rotate(-35deg); opacity: 0; }
+  10%  { opacity: 0.35; }
+  40%  { opacity: 0.25; }
+  60%  { opacity: 0.38; }
+  100% { transform: translateX(120%) translateY(60%) rotate(-35deg); opacity: 0; }
+}
+@keyframes flash-bolt-2 {
+  0%   { transform: translateX(100%) translateY(20%) rotate(-35deg); opacity: 0; }
+  15%  { opacity: 0.3; }
+  55%  { opacity: 0.22; }
+  100% { transform: translateX(-100%) translateY(80%) rotate(-35deg); opacity: 0; }
+}
+@keyframes flash-spark {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50%       { opacity: 0.8; transform: scale(1.3); }
+}
+@keyframes flash-core-pulse {
+  0%, 100% { opacity: 0.08; filter: blur(60px); }
+  50%       { opacity: 0.18; filter: blur(40px); }
+}
+
+/* ── Avengers / Capitán América: Shield rotation + rings ────── */
+@keyframes avengers-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes avengers-ring-expand {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(3.5); opacity: 0; }
+}
+@keyframes avengers-ring-expand-2 {
+  0%   { transform: translate(-50%, -50%) scale(0.2); opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
+}
+@keyframes avengers-breathe {
+  0%, 100% { opacity: 0.08; }
+  50%       { opacity: 0.20; }
+}
+
+/* ── Black Widow: Hourglass float + rotate ──────────────────── */
+@keyframes widow-float-1 {
+  0%   { transform: translateY(110%) rotate(0deg); opacity: 0; }
+  10%  { opacity: 0.25; }
+  80%  { opacity: 0.20; }
+  100% { transform: translateY(-110%) rotate(360deg); opacity: 0; }
+}
+@keyframes widow-float-2 {
+  0%   { transform: translateY(110%) rotate(180deg); opacity: 0; }
+  20%  { opacity: 0.22; }
+  70%  { opacity: 0.28; }
+  100% { transform: translateY(-110%) rotate(540deg); opacity: 0; }
+}
+@keyframes widow-pulse {
+  0%, 100% { opacity: 0.08; box-shadow: 0 0 40px var(--accent-glow); }
+  50%       { opacity: 0.18; box-shadow: 0 0 80px var(--accent-glow); }
+}
+
+/* ── Hulk: Fist impact pulse ────────────────────────────────── */
+@keyframes hulk-fist-pulse {
+  0%   { transform: scale(0.85) rotate(-5deg); opacity: 0.10; }
+  30%  { transform: scale(1.08) rotate(3deg); opacity: 0.22; }
+  60%  { transform: scale(0.95) rotate(-2deg); opacity: 0.14; }
+  100% { transform: scale(0.85) rotate(-5deg); opacity: 0.10; }
+}
+@keyframes hulk-fist-pulse-2 {
+  0%   { transform: scale(1) rotate(10deg); opacity: 0.08; }
+  40%  { transform: scale(1.12) rotate(-5deg); opacity: 0.20; }
+  80%  { transform: scale(0.9) rotate(8deg); opacity: 0.12; }
+  100% { transform: scale(1) rotate(10deg); opacity: 0.08; }
+}
+@keyframes hulk-gamma-crack {
+  0%, 85%, 100% { opacity: 0; }
+  88%, 96% { opacity: 0.35; }
+}
+@keyframes hulk-ambient {
+  0%, 100% { opacity: 0.08; }
+  50%       { opacity: 0.20; }
+}
+
+/* ── Hawkeye: Arrow streaks ─────────────────────────────────── */
+@keyframes hawkeye-arrow-1 {
+  0%   { transform: translateX(-130%) translateY(20%) scaleX(0.5); opacity: 0; }
+  5%   { opacity: 0.4; scaleX: 1; }
+  90%  { opacity: 0.25; }
+  100% { transform: translateX(130%) translateY(-10%) scaleX(1.2); opacity: 0; }
+}
+@keyframes hawkeye-arrow-2 {
+  0%   { transform: translateX(130%) translateY(-20%) scaleX(0.5); opacity: 0; }
+  8%   { opacity: 0.35; }
+  85%  { opacity: 0.22; }
+  100% { transform: translateX(-130%) translateY(30%) scaleX(1.1); opacity: 0; }
+}
+@keyframes hawkeye-arrow-3 {
+  0%   { transform: translateX(-100%) translateY(50%) scaleX(0.7); opacity: 0; }
+  12%  { opacity: 0.30; }
+  80%  { opacity: 0.20; }
+  100% { transform: translateX(100%) translateY(10%) scaleX(1); opacity: 0; }
+}
+@keyframes hawkeye-ambient {
+  0%, 100% { opacity: 0.08; }
+  50%       { opacity: 0.18; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GENERAL UI ANIMATIONS
+═══════════════════════════════════════════════════════════════ */
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+.animate-pulse-slow { animation: pulse-slow 3s infinite ease-in-out; }
+
+/* Neon border breathing */
+@keyframes neon-breathe {
+  0%, 100% { box-shadow: 0 0 10px var(--accent-glow), 0 0 20px var(--accent-glow-soft); }
+  50%       { box-shadow: 0 0 22px var(--accent-glow), 0 0 45px var(--accent-glow-soft); }
+}
+.neon-breathe { animation: neon-breathe 2.5s ease-in-out infinite; }
+
+/* Welcome Screen Animations */
+@keyframes welcome-fade-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes welcome-logo-glow {
+  0%, 100% { filter: drop-shadow(0 0 18px var(--accent-glow)); }
+  50%       { filter: drop-shadow(0 0 40px var(--accent-glow)) drop-shadow(0 0 80px var(--accent-glow)); }
+}
+@keyframes shimmer-slide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+@keyframes bounce-in {
+  0%   { opacity: 0; transform: scale(0.7) translateY(30px); }
+  60%  { transform: scale(1.06) translateY(-6px); }
+  80%  { transform: scale(0.98) translateY(2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes slide-in-from-bottom {
+  from { opacity: 0; transform: translateY(40px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes exit-to-top {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-40px) scale(0.97); }
+}
+
+.animate-welcome-fade-in { animation: welcome-fade-in 0.7s ease-out forwards; }
+.animate-logo-glow        { animation: welcome-logo-glow 3s ease-in-out infinite; }
+.animate-bounce-in        { animation: bounce-in 0.65s cubic-bezier(.22,.61,.36,1) forwards; }
+.animate-slide-in         { animation: slide-in-from-bottom 0.5s ease-out forwards; }
+.animate-exit             { animation: exit-to-top 0.4s ease-in forwards; }
+
+.shimmer-btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer-slide 2s infinite;
+}
+
+/* Fade-in for view transitions */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
