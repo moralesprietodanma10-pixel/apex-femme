@@ -1,0 +1,298 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════
+   APEX FEMME DESIGN SYSTEM — DESIGN TOKENS & ACCESSIBILITY (WCAG 2.2 AA)
+   Inspired by Apple HIG, Linear, Stripe Dashboard & Material 3
+═══════════════════════════════════════════════════════════════ */
+
+:root,
+:root[data-mode="dark"] {
+  /* Surface & Background Tokens */
+  --bg-app: #090D16;
+  --bg-header: rgba(15, 23, 42, 0.88);
+  --bg-card: rgba(15, 23, 42, 0.65);
+  --bg-card-hover: rgba(26, 38, 66, 0.75);
+  --bg-card-solid: #0F172A;
+  --bg-panel: rgba(15, 23, 42, 0.90);
+  --bg-input: #0A101D;
+  --bg-input-focus: #0D1629;
+  
+  /* Typographic Contrast Tokens (WCAG 2.2 AA >= 4.5:1) */
+  --text-main: #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-inverse: #020617;
+
+  /* Border & Glass Elevation Tokens */
+  --border-subtle: rgba(148, 163, 184, 0.15);
+  --border-card: rgba(148, 163, 184, 0.22);
+  --border-card-hover: rgba(148, 163, 184, 0.40);
+  --border-focus: var(--accent-color);
+  
+  /* Semantic Status Colors */
+  --color-success: #10B981;
+  --color-success-bg: rgba(16, 185, 129, 0.12);
+  --color-warning: #F59E0B;
+  --color-warning-bg: rgba(245, 158, 11, 0.12);
+  --color-error: #EF4444;
+  --color-error-bg: rgba(239, 68, 68, 0.12);
+  --color-info: #06B6D4;
+  --color-info-bg: rgba(6, 182, 212, 0.12);
+
+  --chat-ai-bg: linear-gradient(135deg, #1E293B 0%, #0A101D 100%);
+  --scrollbar-track: #090D16;
+  --scrollbar-thumb: #1E293B;
+
+  color-scheme: dark;
+}
+
+:root[data-mode="light"] {
+  /* Light Surface & Background Tokens */
+  --bg-app: #F8FAFC;
+  --bg-header: rgba(255, 255, 255, 0.92);
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(241, 245, 249, 0.95);
+  --bg-card-solid: #FFFFFF;
+  --bg-panel: rgba(248, 250, 252, 0.95);
+  --bg-input: #FFFFFF;
+  --bg-input-focus: #F1F5F9;
+
+  /* Typographic Contrast Tokens */
+  --text-main: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --text-inverse: #FFFFFF;
+
+  /* Border & Glass Elevation Tokens */
+  --border-subtle: rgba(148, 163, 184, 0.35);
+  --border-card: rgba(203, 213, 225, 0.80);
+  --border-card-hover: rgba(148, 163, 184, 0.90);
+  --border-focus: var(--accent-color);
+
+  /* Semantic Status Colors */
+  --color-success: #059669;
+  --color-success-bg: rgba(5, 150, 105, 0.12);
+  --color-warning: #D97706;
+  --color-warning-bg: rgba(217, 119, 6, 0.12);
+  --color-error: #DC2626;
+  --color-error-bg: rgba(220, 38, 38, 0.12);
+  --color-info: #0891B2;
+  --color-info-bg: rgba(8, 145, 178, 0.12);
+
+  --chat-ai-bg: linear-gradient(135deg, #FFFFFF 0%, #F1F5F9 100%);
+  --scrollbar-track: #F1F5F9;
+  --scrollbar-thumb: #CBD5E1;
+
+  color-scheme: light;
+}
+
+/* ─── THEME PALETTES (5 High Performance Accent Schemes) ────── */
+:root {
+  --accent-color: #EAB308;
+  --accent-hover: #FACC15;
+  --accent-glow: rgba(234, 179, 8, 0.40);
+  --accent-glow-soft: rgba(234, 179, 8, 0.15);
+  --accent-text: #0F172A;
+  --theme-name: "flash";
+}
+
+:root[data-theme="flash"], [data-theme="flash"] {
+  --accent-color: #EAB308;
+  --accent-hover: #FACC15;
+  --accent-glow: rgba(234, 179, 8, 0.40);
+  --accent-glow-soft: rgba(234, 179, 8, 0.15);
+  --accent-text: #020617;
+}
+
+:root[data-theme="avengers"], [data-theme="avengers"] {
+  --accent-color: #EF4444;
+  --accent-hover: #F87171;
+  --accent-glow: rgba(239, 68, 68, 0.45);
+  --accent-glow-soft: rgba(239, 68, 68, 0.18);
+  --accent-text: #FFFFFF;
+}
+
+:root[data-theme="widow"], [data-theme="widow"] {
+  --accent-color: #E11D48;
+  --accent-hover: #FB7185;
+  --accent-glow: rgba(225, 29, 72, 0.45);
+  --accent-glow-soft: rgba(225, 29, 72, 0.18);
+  --accent-text: #FFFFFF;
+}
+
+:root[data-theme="hulk"], [data-theme="hulk"] {
+  --accent-color: #10B981;
+  --accent-hover: #34D399;
+  --accent-glow: rgba(16, 185, 129, 0.45);
+  --accent-glow-soft: rgba(16, 185, 129, 0.18);
+  --accent-text: #020617;
+}
+
+:root[data-theme="hawkeye"], [data-theme="hawkeye"] {
+  --accent-color: #8B5CF6;
+  --accent-hover: #A78BFA;
+  --accent-glow: rgba(139, 92, 246, 0.45);
+  --accent-glow-soft: rgba(139, 92, 246, 0.18);
+  --accent-text: #FFFFFF;
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: background-color 0.25s ease-in-out, color 0.25s ease-in-out;
+  -webkit-tap-highlight-color: transparent;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Accessible Focus Visible Ring (WCAG 2.2 AA) */
+*:focus-visible {
+  outline: 2px solid var(--accent-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DESIGN SYSTEM UTILITIES & COMPONENT ELEVATIONS
+═══════════════════════════════════════════════════════════════ */
+@layer utilities {
+  .theme-accent-bg {
+    background-color: var(--accent-color) !important;
+    color: var(--accent-text) !important;
+  }
+
+  .theme-accent-bg:hover {
+    background-color: var(--accent-hover) !important;
+  }
+
+  .theme-accent-text {
+    color: var(--accent-color) !important;
+  }
+
+  .theme-accent-border {
+    border-color: var(--accent-color) !important;
+  }
+
+  .theme-accent-glow {
+    box-shadow: 0 0 20px var(--accent-glow) !important;
+  }
+
+  .neon-border {
+    border: 1.5px solid var(--accent-color) !important;
+    box-shadow: 0 0 10px var(--accent-glow), 0 0 20px var(--accent-glow-soft), inset 0 0 8px var(--accent-glow-soft) !important;
+  }
+
+  .glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-card);
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+
+  .glass-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-card-hover);
+  }
+
+  .glass-card-neon {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    border: 1.5px solid var(--accent-color) !important;
+    box-shadow: 0 0 14px var(--accent-glow), 0 0 30px var(--accent-glow-soft) !important;
+    transition: all 0.25s ease-in-out;
+  }
+
+  .glass-panel {
+    background: var(--bg-panel);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .fut-card-metallic {
+    background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, var(--bg-card-solid) 60%, rgba(0,0,0,0.3) 100%);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 25px var(--accent-glow);
+    border: 2px solid var(--accent-color) !important;
+  }
+
+  .chat-bubble-ai {
+    background: var(--chat-ai-bg);
+    border-left: 3.5px solid var(--accent-color) !important;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
+
+/* Range sliders styling */
+input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%; height: 8px; cursor: pointer;
+  background: var(--scrollbar-thumb); border-radius: 9999px;
+}
+input[type=range]::-webkit-slider-thumb {
+  border: 3px solid var(--bg-app); height: 24px; width: 24px;
+  border-radius: 50%; background: var(--accent-hover);
+  cursor: pointer; -webkit-appearance: none; margin-top: -8px;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Micro-interactions and spring animations */
+@keyframes neon-breathe {
+  0%, 100% { box-shadow: 0 0 10px var(--accent-glow), 0 0 20px var(--accent-glow-soft); }
+  50%       { box-shadow: 0 0 22px var(--accent-glow), 0 0 45px var(--accent-glow-soft); }
+}
+.neon-breathe { animation: neon-breathe 2.5s ease-in-out infinite; }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-scale-in { animation: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-count-up { animation: count-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Stagger children delays for list animations */
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.30s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+
+/* Interactive card lift on hover */
+.card-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.35);
+}
+
+/* Trend badge utilities */
+.trend-up   { color: #10B981; background: rgba(16, 185, 129, 0.12); }
+.trend-down { color: #EF4444; background: rgba(239, 68, 68, 0.12); }
+.trend-flat { color: #94A3B8; background: rgba(148, 163, 184, 0.10); }
+
