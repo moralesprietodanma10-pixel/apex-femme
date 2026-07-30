@@ -157,13 +157,26 @@ export const PlayerCardView: React.FC<PlayerCardViewProps> = ({ playerProfile, m
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-32 animate-fade-in">
+      {/* Top Header Single Question */}
+      <section className="glass-card rounded-3xl p-6 border border-[var(--accent-color)]/40 relative overflow-hidden shadow-2xl space-y-2">
+        <span className="text-[10px] font-mono font-bold uppercase tracking-widest theme-accent-text block">
+          IDENTIDAD DE JUGADORA & EVALUACIÓN EA FC
+        </span>
+        <h2 className="font-extrabold text-2xl md:text-3xl text-[var(--text-main)]">
+          ¿Quién soy como atleta?
+        </h2>
+        <p className="text-xs text-[var(--text-muted)]">
+          Ficha interactiva de atributos FIFA/EA FC, radar comparativo de 6 ejes frente a referentes y desglose de PlayStyles+.
+        </p>
+      </section>
+
       {/* Theme Switcher & Actions Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[var(--bg-input)] p-3.5 rounded-2xl border border-[var(--border-subtle)]">
         <div className="flex items-center gap-2">
           <Award className="w-5 h-5 text-[var(--accent-color)]" />
-          <h2 className="font-extrabold text-sm uppercase tracking-wider text-[var(--text-main)]">
+          <h3 className="font-extrabold text-sm uppercase tracking-wider text-[var(--text-main)]">
             Estilo de Carta EA FC Pro
-          </h2>
+          </h3>
         </div>
 
         <div className="flex gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 items-center justify-between sm:justify-end">

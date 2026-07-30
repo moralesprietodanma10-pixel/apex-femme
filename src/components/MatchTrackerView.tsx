@@ -53,7 +53,7 @@ export const MatchTrackerView: React.FC<MatchTrackerViewProps> = ({ onSaveMatch,
       rpe,
       keyPasses,
       recoveries,
-      notes: tacticalNotes || `Influencia principal en ${selectedPitchZone.replace('_', ' ')}. xG: ${estimatedXg}, xA: ${estimatedXa}.`
+      tacticalNotes: tacticalNotes || `Influencia principal en ${selectedPitchZone.replace('_', ' ')}. xG: ${estimatedXg}, xA: ${estimatedXa}.`
     });
   };
 
@@ -94,11 +94,11 @@ export const MatchTrackerView: React.FC<MatchTrackerViewProps> = ({ onSaveMatch,
           <div className="glass-card rounded-3xl p-6 border border-[var(--accent-color)]/40 relative overflow-hidden shadow-2xl">
             <div className="flex justify-between items-center relative z-10">
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider theme-accent-text">
-                  LABORATORIO DE RENDIMIENTO TÁCTICO
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest theme-accent-text block mb-1">
+                  ESTADÍSTICAS & CONTROL DE CARGA
                 </span>
-                <h2 className="font-extrabold text-2xl text-[var(--text-main)] mt-1">
-                  Registro de Partido o Entrenamiento
+                <h2 className="font-extrabold text-2xl md:text-3xl text-[var(--text-main)]">
+                  ¿Cómo estoy progresando?
                 </h2>
               </div>
 

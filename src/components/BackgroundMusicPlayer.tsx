@@ -179,7 +179,6 @@ export const BackgroundMusicPlayer: React.FC = () => {
           setProgress(el.duration ? el.currentTime / el.duration : 0);
         }}
         onLoadedMetadata={e => setDuration(e.currentTarget.duration)}
-        volume={isMuted ? 0 : volume}
       />
 
       {/* ── Floating Widget ── */}

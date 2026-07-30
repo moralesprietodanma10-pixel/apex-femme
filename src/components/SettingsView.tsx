@@ -412,7 +412,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   style={isSelected ? {
                     borderColor: t.colorHex,
                     boxShadow: `0 0 12px ${t.colorHex}55, 0 0 24px ${t.colorHex}22`,
-                    ringColor: t.colorHex,
                   } : {}}
                 >
                   <div

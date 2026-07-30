@@ -141,7 +141,7 @@ export const CoachView: React.FC<CoachViewProps> = ({
   onRecalculateWeek,
   onUpdateWeeklySchedule
 }) => {
-  const [activeMode, setActiveMode] = useState<'chat' | 'import' | 'planner' | 'video'>('chat');
+  const [activeMode, setActiveMode] = useState<'chat' | 'import' | 'planner' | 'video' | 'nutrition'>('chat');
   const [importSubTab, setImportSubTab] = useState<'presets' | 'manual' | 'json'>('presets');
   
   const [inputText, setInputText] = useState('');

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { PlayerProfile, ThemeColor } from '../types';
+import React, { useState, useEffect } from 'react';
+import { PlayerProfile } from '../types';
 import { POSITIONS_LIST, COUNTRIES_LIST } from '../data/initialData';
-import { ShieldAlert, LogIn, User, Sparkles, Check, Camera, RefreshCcw } from 'lucide-react';
+import { ShieldAlert, LogIn, Check, Camera, RefreshCcw } from 'lucide-react';
+import { sounds } from '../services/soundEffects';
 
 interface ResetConfirmModalProps {
   isOpen: boolean;
@@ -25,9 +26,21 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400'
   );
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSimulateGoogleLogin = () => {
+    sounds.playClick();
     setIsGoogleSignedIn(true);
     setName('Danna Morales');
     setEmail('moralesprietodanna7@gmail.com');
@@ -52,10 +65,12 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
   const handleSubmitReset = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
+      sounds.playError();
       alert('Por favor escribe tu nombre para configurar la nueva cuenta.');
       return;
     }
 
+    sounds.playSuccess();
     onConfirmReset({
       name: name.trim(),
       email: email || 'usuario@gmail.com',
@@ -86,7 +101,12 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-reset-title"
+      className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto animate-fade-in"
+    >
       <div className="glass-panel w-full max-w-lg rounded-3xl p-6 border-2 border-red-500/50 shadow-[0_0_35px_rgba(239,68,68,0.3)] space-y-5 my-8">
         {/* Header Alert */}
         <div className="flex items-start justify-between border-b border-red-500/30 pb-4">
@@ -95,7 +115,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
               <ShieldAlert className="w-7 h-7 animate-bounce" />
             </div>
             <div>
-              <h3 className="font-extrabold text-lg text-white">
+              <h3 id="modal-reset-title" className="font-extrabold text-lg text-white">
                 ⚠️ ¿REINICIAR ESTADO BASE A 0?
               </h3>
               <p className="text-xs text-red-200 leading-snug">
@@ -104,8 +124,10 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white text-lg font-bold p-1"
+            type="button"
+            onClick={() => { sounds.playClick(); onClose(); }}
+            aria-label="Cerrar modal"
+            className="text-gray-400 hover:text-white text-lg font-bold p-1 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400"
           >
             ✕
           </button>
@@ -127,7 +149,7 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
           <button
             type="button"
             onClick={handleSimulateGoogleLogin}
-            className="w-full py-2.5 px-4 bg-white text-gray-900 font-bold text-xs rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-3 shadow-md active:scale-95"
+            className="w-full py-2.5 px-4 bg-white text-gray-900 font-bold text-xs rounded-xl hover:bg-gray-100 transition-colors flex items-center justify-center gap-3 shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-white"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
@@ -160,16 +182,20 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
           {/* Photo Import / URL */}
           <div className="flex items-center gap-4 bg-[#171f33] p-3 rounded-2xl border border-[#424936]/40">
             <div className="relative w-16 h-16 rounded-full border-2 border-[#84cc16] overflow-hidden shrink-0">
-              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              <img src={avatarUrl} alt="Avatar de la jugadora" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 space-y-1">
-              <label className="text-[10px] font-bold text-[#c1cab0] uppercase block">
+              <label htmlFor="photo-upload" className="text-[10px] font-bold text-[#c1cab0] uppercase block">
                 Foto / Avatar de Jugadora
               </label>
               <div className="flex gap-2">
-                <label className="bg-[#2d3449] hover:bg-[#3d4661] text-[#7bd0ff] px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 active:scale-95">
+                <label 
+                  htmlFor="photo-upload" 
+                  className="bg-[#2d3449] hover:bg-[#3d4661] text-[#7bd0ff] px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1.5 active:scale-95 focus-within:ring-2 focus-within:ring-[#7bd0ff]"
+                >
                   <Camera className="w-3.5 h-3.5" /> Subir Foto
                   <input
+                    id="photo-upload"
                     type="file"
                     accept="image/*"
                     onChange={handleCustomPhotoUpload}
@@ -182,10 +208,11 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
+              <label htmlFor="reset-name" className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
                 Nombre Completo
               </label>
               <input
+                id="reset-name"
                 type="text"
                 required
                 value={name}
@@ -196,10 +223,11 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
+              <label htmlFor="reset-email" className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
                 Correo Electrónico
               </label>
               <input
+                id="reset-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -211,10 +239,11 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
+              <label htmlFor="reset-position" className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
                 Posición
               </label>
               <select
+                id="reset-position"
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
                 className="w-full bg-[#131b2e] border border-[#424936] rounded-xl px-3 py-2 text-xs text-white focus:border-[#84cc16] outline-none"
@@ -228,10 +257,11 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
+              <label htmlFor="reset-country" className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
                 Nacionalidad / País
               </label>
               <select
+                id="reset-country"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 className="w-full bg-[#131b2e] border border-[#424936] rounded-xl px-3 py-2 text-xs text-white focus:border-[#84cc16] outline-none"
@@ -247,10 +277,11 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
+              <label htmlFor="reset-foot" className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
                 Pierna Hábil
               </label>
               <select
+                id="reset-foot"
                 value={preferredFoot}
                 onChange={(e) => setPreferredFoot(e.target.value)}
                 className="w-full bg-[#131b2e] border border-[#424936] rounded-xl px-3 py-2 text-xs text-white focus:border-[#84cc16] outline-none"
@@ -262,10 +293,11 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
+              <label htmlFor="reset-jersey" className="text-[10px] font-bold text-[#c1cab0] uppercase block mb-1">
                 Dorsal / Número
               </label>
               <input
+                id="reset-jersey"
                 type="text"
                 value={jerseyNumber}
                 onChange={(e) => setJerseyNumber(e.target.value)}
@@ -279,14 +311,14 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
           <div className="pt-2 flex gap-3">
             <button
               type="button"
-              onClick={onClose}
-              className="flex-1 py-3 rounded-xl border border-[#424936] text-[#c1cab0] hover:text-white font-bold text-xs"
+              onClick={() => { sounds.playClick(); onClose(); }}
+              className="flex-1 py-3 rounded-xl border border-[#424936] text-[#c1cab0] hover:text-white font-bold text-xs focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-600/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-red-600/30 active:scale-95 transition-all flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-red-400"
             >
               <RefreshCcw className="w-4 h-4" />
               Confirmar y Empezar a 0

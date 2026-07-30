@@ -206,23 +206,29 @@ export const GymHubView: React.FC<GymHubViewProps> = ({ playerProfile, onUpdateP
     <div className="space-y-5 pb-32 max-w-4xl mx-auto animate-fade-in">
 
       {/* ── Page Header ────────────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-3xl glass-card p-5 border border-[var(--accent-color)]/40 shadow-2xl">
+      <section className="relative overflow-hidden rounded-3xl glass-card p-6 border border-[var(--accent-color)]/40 shadow-2xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent-color)]/10 via-transparent to-transparent pointer-events-none" />
-        <div className="relative z-10 flex items-center justify-between">
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <div className="theme-accent-bg p-2 rounded-xl">
+              <div className="theme-accent-bg p-2 rounded-xl text-black">
                 <Dumbbell className="w-5 h-5" />
               </div>
-              <span className="text-[10px] font-extrabold font-mono theme-accent-bg px-2 py-0.5 rounded uppercase">GYM HUB</span>
+              <span className="text-[10px] font-black font-mono theme-accent-bg px-2.5 py-0.5 rounded-lg uppercase tracking-wider text-black">
+                HUB DE ENTRENAMIENTO
+              </span>
             </div>
-            <h2 className="font-black text-2xl text-[var(--text-main)]">Centro de Rendimiento Físico</h2>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">Rutinas • 1RM • RPE • Récords Personales • Rutinas Personalizadas</p>
+            <h2 className="font-black text-2xl md:text-3xl text-[var(--text-main)] tracking-tight">
+              ¿Qué debo entrenar hoy?
+            </h2>
+            <p className="text-xs text-[var(--text-muted)] mt-1">
+              Selecciona tu rutina periodizada según tu posición ({playerProfile.position}) y fase del ciclo menstrual.
+            </p>
           </div>
-          <div className="text-right hidden sm:block">
-            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Atributo Físico</p>
+          <div className="text-right bg-[var(--bg-input)] px-4 py-2 rounded-2xl border border-[var(--border-subtle)] self-end sm:self-auto">
+            <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Atributo Físico</p>
             <p className="font-mono text-2xl font-black theme-accent-text">{playerProfile.attributes?.physical ?? 79}</p>
-            <p className="text-[9px] text-[var(--text-muted)]">OVR Fuerza</p>
+            <p className="text-[9px] font-bold text-emerald-400">OVR Fuerza & Potencia</p>
           </div>
         </div>
       </section>
