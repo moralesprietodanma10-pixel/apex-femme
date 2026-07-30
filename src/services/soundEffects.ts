@@ -24,6 +24,7 @@ class SoundController {
 
   // Micro click for any button or tab press
   playClick() {
+    this.vibrate(10);
     try {
       const ctx = this.getContext();
       if (!ctx) return;
@@ -43,6 +44,7 @@ class SoundController {
 
   // Success chime for completing workouts, claiming rewards
   playSuccess() {
+    this.vibrate([15, 30, 15]);
     try {
       const ctx = this.getContext();
       if (!ctx) return;
@@ -66,6 +68,7 @@ class SoundController {
 
   // Fanfare jingle when leveling up or earning a badge
   playLevelUp() {
+    this.vibrate([30, 50, 30, 50, 60]);
     try {
       const ctx = this.getContext();
       if (!ctx) return;
@@ -89,6 +92,7 @@ class SoundController {
 
   // Error / invalid action sound
   playError() {
+    this.vibrate([40, 20, 40]);
     try {
       const ctx = this.getContext();
       if (!ctx) return;

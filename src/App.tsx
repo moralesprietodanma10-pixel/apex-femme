@@ -28,6 +28,7 @@ import {
 import { TopHeader } from './components/TopHeader';
 import { BottomNav } from './components/BottomNav';
 import { ToastNotification, ToastData } from './components/ToastNotification';
+import { OfflineBanner } from './components/OfflineBanner';
 
 import { ResetConfirmModal } from './components/ResetConfirmModal';
 import { SmartwatchSyncModal } from './components/SmartwatchSyncModal';
@@ -297,7 +298,8 @@ export default function App() {
     const delay = 800 + Math.random() * 700;
 
     setTimeout(() => {
-      const response = generateAIResponse(userText, playerProfile, smartwatchData);
+      // V12: Pass matchLogs for richer context and higher confidence scores
+      const response = generateAIResponse(userText, playerProfile, smartwatchData, matchLogs);
 
       const currentTone = playerProfile.aiTone || 'gemini';
       const headers: Record<string, string> = {
@@ -337,11 +339,14 @@ export default function App() {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
         text: `${header}\n\n${response.text}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        // V12: AI Confidence Engine — every response shows its data basis
+        confidence: response.confidence
       };
       setChatHistory((prev) => [...prev, aiMsg]);
     }, delay);
-  }, [playerProfile, smartwatchData]);
+  }, [playerProfile, smartwatchData, matchLogs]);
+
 
   // Recalculate Week with AI
   const handleRecalculateWeek = () => {
@@ -569,8 +574,11 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-[#dae2fd] font-sans relative selection:bg-amber-500/30 overflow-x-hidden">
-      {/* Superhero Theme Background Animation */}
+    <div className="min-h-screen bg-[var(--bg-app)] text-[var(--text-main)] transition-colors duration-300 relative selection:bg-[var(--accent-color)] selection:text-black">
+      {/* Offline Resilience Banner */}
+      <OfflineBanner />
+
+      {/* Dynamic Animated Background Mesh Theme */}
       <ThemeBackground theme={playerProfile.themeColor || 'flash'} />
 
       {/* Toast Notification Banner */}

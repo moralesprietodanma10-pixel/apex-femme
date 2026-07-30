@@ -27,7 +27,12 @@ export const ToastNotification: React.FC<ToastNotificationProps> = ({ toast, onC
   if (!toast) return null;
 
   return (
-    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-md animate-bounce-short">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-md animate-bounce-short"
+    >
       <div className="glass-panel rounded-2xl p-4 border border-[#84cc16] shadow-[0_0_25px_rgba(132,204,22,0.4)] flex items-center justify-between gap-3 bg-[#131b2e]/95">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#84cc16]/20 border border-[#84cc16]/50 flex items-center justify-center shrink-0 text-[#9ee939]">

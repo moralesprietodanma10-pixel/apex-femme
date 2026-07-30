@@ -7,6 +7,28 @@ export interface PlayerAttributes {
   shooting: number;  // DIS (Disparo)
 }
 
+/**
+ * WeeklyTrend — used to contextualize any metric with week-over-week data.
+ * Implements V12 directive: "No numbers in isolation — every datum answers a question."
+ */
+export interface WeeklyTrend {
+  current: number;
+  previousWeek: number;
+  monthlyAvg: number;
+  unit: string;           // e.g. 'min', 'km', '/10', '%'
+  label: string;          // Short readable label, e.g. "Volumen semanal"
+  goalValue?: number;     // Optional weekly/monthly goal
+}
+
+/** Computed readiness context derived from HRV + sleep + RPE history */
+export interface ReadinessContext {
+  score: number;          // 0–100
+  label: string;          // e.g. 'Óptimo', 'Moderado', 'Necesitas Descanso'
+  color: 'green' | 'yellow' | 'red';
+  recommendation: string; // Science-backed single-line action
+  evidenceLevel: 'Alta' | 'Moderada' | 'Limitada';
+}
+
 export type ThemeColor = 'flash' | 'avengers' | 'widow' | 'hulk' | 'hawkeye';
 export type ThemeMode = 'dark' | 'light';
 
@@ -57,6 +79,13 @@ export interface PlayerProfile {
   aiTone?: AiTone;
   mentorId?: string;
   club?: string;
+  // V12: Weekly performance trends for contextual data display
+  weeklyTrends?: {
+    minutes: WeeklyTrend;
+    rating: WeeklyTrend;
+    distance: WeeklyTrend;
+    recoveries: WeeklyTrend;
+  };
 }
 
 export interface FemaleMentor {
@@ -100,6 +129,10 @@ export interface ExerciseDetail {
   injuryPreventionTag?: string;
   techniqueTip?: string;
   sets?: WorkoutSetDetail[];
+  /** V12 Master Sports Science Audit fields */
+  evidenceLevel?: 'Alta' | 'Moderada' | 'Limitada';
+  citation?: string;
+  pitchTransfer?: string;
 }
 
 export interface ScheduleDay {
@@ -185,6 +218,8 @@ export interface ChatMessage {
   videoName?: string;
   videoAnalysis?: VideoAnalysis;
   proposedSchedule?: ScheduleDay[];
+  /** V12: AI confidence metadata — only on AI messages */
+  confidence?: AIConfidenceEngine;
 }
 
 export type ChallengeTimeframe = 'diario' | 'semanal' | 'mensual' | 'anual';
@@ -233,4 +268,36 @@ export interface RpeCalculatorResult {
 }
 
 export type ActiveTab = 'dashboard' | 'gym' | 'coach' | 'tracker' | 'card' | 'gamification' | 'mentors' | 'settings';
+
+/**
+ * AIConfidenceEngine — V12 AI Audit
+ * Every AI recommendation must expose its reasoning, data basis and confidence.
+ * This is the key differentiator: transparent AI, never a black box.
+ */
+export interface AIConfidenceEngine {
+  /** 0–100 confidence score based on available data points */
+  confidence: number;
+  /** Human-readable explanation of what data was used */
+  dataUsed: string;
+  /** Scientific evidence level */
+  evidenceLevel: 'Alta' | 'Moderada' | 'Limitada' | 'Sin datos suficientes';
+  /** When confidence is low, explain why */
+  limitationNote?: string;
+}
+
+/**
+ * ProactiveAlert — V12 AI Audit
+ * The AI coach doesn't wait to be asked. It detects patterns and surfaces insights.
+ */
+export interface ProactiveAlert {
+  id: string;
+  type: 'overload' | 'recovery' | 'improvement' | 'stagnation' | 'streak' | 'injury_risk' | 'positive';
+  title: string;
+  message: string;
+  action?: string;   // CTA label
+  actionQuery?: string;  // What to send to AI when user taps action
+  priority: 'high' | 'medium' | 'low';
+  icon: string;
+}
+
 

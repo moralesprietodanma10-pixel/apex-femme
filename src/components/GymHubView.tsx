@@ -319,7 +319,14 @@ export const GymHubView: React.FC<GymHubViewProps> = ({ playerProfile, onUpdateP
                           <Dumbbell className="w-3.5 h-3.5 theme-accent-text" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-[var(--text-main)] truncate">{ex.name}</p>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="text-xs font-bold text-[var(--text-main)] truncate">{ex.name}</p>
+                            {ex.evidenceLevel && (
+                              <span className="text-[8px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400">
+                                🔬 {ex.evidenceLevel}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[9px] text-[var(--text-muted)] font-mono">
                             {ex.targetSets} series × {ex.defaultReps} reps
                             {ex.defaultWeightKg ? ` • ${ex.defaultWeightKg} kg` : ''}
@@ -327,8 +334,13 @@ export const GymHubView: React.FC<GymHubViewProps> = ({ playerProfile, onUpdateP
                           </p>
                           {ex.injuryPreventionTag && (
                             <p className="text-[8px] text-amber-400 mt-0.5 flex items-center gap-1">
-                              <ShieldCheck className="w-2.5 h-2.5" />
+                              <ShieldCheck className="w-2.5 h-2.5 shrink-0" />
                               {ex.injuryPreventionTag}
+                            </p>
+                          )}
+                          {ex.citation && (
+                            <p className="text-[8px] text-emerald-400/90 font-mono mt-0.5 truncate">
+                              📚 {ex.citation}
                             </p>
                           )}
                         </div>

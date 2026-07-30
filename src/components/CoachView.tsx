@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { PlayerProfile, ScheduleDay, ChatMessage, VideoAnalysis, TrainingLocation, TrainingFocus, SmartwatchData } from '../types';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { PlayerProfile, ScheduleDay, ChatMessage, VideoAnalysis, TrainingLocation, TrainingFocus, SmartwatchData, ProactiveAlert } from '../types';
+import { generateProactiveAlerts } from '../services/aiEngineService';
 import { 
   Bot, 
   Send, 
@@ -139,10 +140,23 @@ export const CoachView: React.FC<CoachViewProps> = ({
   chatHistory,
   onSendMessage,
   onRecalculateWeek,
-  onUpdateWeeklySchedule
+  onUpdateWeeklySchedule,
+  smartwatchData
 }) => {
   const [activeMode, setActiveMode] = useState<'chat' | 'import' | 'planner' | 'video' | 'nutrition'>('chat');
   const [importSubTab, setImportSubTab] = useState<'presets' | 'manual' | 'json'>('presets');
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+
+  // V12: Proactive AI alerts computed from current biometrics and trends
+  const proactiveAlerts = useMemo(() => {
+    const watch = smartwatchData || {
+      connected: false, deviceName: '', batteryLevel: 0, heartRateBpm: 64,
+      hrvMs: 68, stepsToday: 0, caloriesBurned: 0, distanceKm: 0,
+      avgPaceMinKm: '0:00 /km', stressScore: 0, sleepRecoveryScore: 0,
+      heartRateZone: 'Reposo', lastSyncTime: ''
+    };
+    return generateProactiveAlerts(playerProfile, watch);
+  }, [playerProfile, smartwatchData]);
   
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -240,13 +254,14 @@ export const CoachView: React.FC<CoachViewProps> = ({
   };
 
   const promptChips = [
-    "👋 Hola Coach, ¿cómo estás hoy?",
-    "🔍 Noticias del Balón de Oro Femenino",
-    "⌚ ¿Cómo están mis pulsaciones y HRV hoy?",
-    "⚡ Prevención de lesiones (LCA) en fútbol femenino",
-    "📥 Importar plan de Gimnasio a las 18:00",
-    "📥 Importar rutina de Técnica en Casa a las 17:00",
-    "🥗 ¿Qué comer 3 horas antes del partido?"
+    `⚡ ¿Qué entreno hoy con mi HRV actual?`,
+    `🔍 ¿Qué patrones detectas en mis datos?`,
+    `🦵 Protocolo prevención LCA para ${playerProfile.position}`,
+    `⏰ ¿Cuál es mi carga ACWR esta semana?`,
+    `📥 Importar plan de Gimnasio a las 18:00`,
+    `🥗 Nutrición 3 horas antes del partido`,
+    `😴 ¿Cuál es el protocolo de recuperación óptimo?`,
+    `🎯 Consejo táctico para ${playerProfile.position}`,
   ];
 
   useEffect(() => {
@@ -602,11 +617,60 @@ export const CoachView: React.FC<CoachViewProps> = ({
       {/* MODE 1: CHAT VIEW */}
       {activeMode === 'chat' && (
         <div className="space-y-4">
+
+          {/* V12: Proactive AI Alerts — the coach surfaces insights without being asked */}
+          {proactiveAlerts.filter(a => !dismissedAlerts.has(a.id)).length > 0 && (
+            <div className="space-y-2 animate-slide-up">
+              <p className="text-[10px] font-bold text-[#c1cab0] uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-[#84cc16]" />
+                APEX DETECTÓ ESTO PARA TI
+              </p>
+              {proactiveAlerts.filter(a => !dismissedAlerts.has(a.id)).map(alert => (
+                <div
+                  key={alert.id}
+                  className={`p-3.5 rounded-2xl border flex items-start justify-between gap-3 text-xs transition-all ${
+                    alert.priority === 'high'
+                      ? 'bg-red-500/10 border-red-500/30 text-red-300'
+                      : alert.priority === 'medium'
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                      : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                  }`}
+                >
+                  <div className="flex-1 space-y-1.5">
+                    <p className="font-bold flex items-center gap-1.5">
+                      <span>{alert.icon}</span>
+                      {alert.title}
+                    </p>
+                    <p className="text-[11px] opacity-80 leading-snug">{alert.message}</p>
+                    {alert.action && alert.actionQuery && (
+                      <button
+                        onClick={() => handleSend(alert.actionQuery!)}
+                        className="text-[10px] font-bold underline opacity-80 hover:opacity-100 transition-opacity text-left"
+                      >
+                        → {alert.action}
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setDismissedAlerts(prev => new Set([...prev, alert.id]))}
+                    className="shrink-0 opacity-50 hover:opacity-100 font-mono text-[10px] mt-0.5"
+                    aria-label="Descartar alerta"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="space-y-4 min-h-[260px] max-h-[420px] overflow-y-auto pr-1">
             {chatHistory.map((msg) => {
               const isAi = msg.sender === 'ai';
+              const conf = msg.confidence;
+
+
               return (
-                <div key={msg.id} className={`flex gap-3 ${isAi ? '' : 'justify-end'}`}>
+                <div key={msg.id} className={`flex gap-3 ${isAi ? '' : 'justify-end'} animate-slide-up`}>
                   {isAi && (
                     <div className="w-8 h-8 rounded-xl bg-[#84cc16]/20 border border-[#84cc16]/40 flex items-center justify-center shrink-0 text-[#9ee939]">
                       <Bot className="w-5 h-5" />
@@ -614,30 +678,80 @@ export const CoachView: React.FC<CoachViewProps> = ({
                   )}
 
                   <div className={`p-4 rounded-2xl max-w-[85%] text-xs sm:text-sm leading-relaxed relative group ${
-                    isAi 
-                      ? 'chat-bubble-ai text-[#dae2fd] shadow-lg' 
+                    isAi
+                      ? 'chat-bubble-ai text-[#dae2fd] shadow-lg'
                       : 'bg-[var(--accent-color)] text-[var(--accent-text)] font-bold rounded-tr-none'
                   }`}>
                     <p className="whitespace-pre-line">{msg.text}</p>
-                    
-                    <div className="flex items-center justify-between mt-2 pt-1 border-t border-white/10 text-[9px] opacity-70 font-mono">
-                      {isAi ? (
-                        <button
-                          onClick={() => speakText(msg.id, msg.text)}
-                          className={`flex items-center gap-1 font-bold px-2 py-0.5 rounded-md transition-all ${
-                            speakingMsgId === msg.id
-                              ? 'bg-amber-400 text-black animate-pulse'
-                              : 'bg-white/10 hover:bg-white/20 text-white'
-                          }`}
-                          title="Escuchar audio del Coach"
-                        >
-                          <Volume2 className="w-3 h-3" />
-                          <span>{speakingMsgId === msg.id ? 'Hablando...' : 'Escuchar Audio'}</span>
-                        </button>
-                      ) : <span />}
 
-                      <span>{msg.timestamp}</span>
-                    </div>
+                    {/* V12: AI Confidence Engine Badge */}
+                    {isAi && conf && (
+                      <div className="mt-3 pt-2 border-t border-white/10 space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {/* Confidence bar */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-bold text-[#c1cab0] uppercase tracking-wider">Confianza</span>
+                            <div className="flex items-center gap-1">
+                              <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all duration-700"
+                                  style={{
+                                    width: `${conf.confidence}%`,
+                                    backgroundColor: conf.confidence >= 75 ? '#10B981' : conf.confidence >= 50 ? '#F59E0B' : '#EF4444'
+                                  }}
+                                />
+                              </div>
+                              <span className="text-[9px] font-mono font-black" style={{
+                                color: conf.confidence >= 75 ? '#10B981' : conf.confidence >= 50 ? '#F59E0B' : '#EF4444'
+                              }}>{conf.confidence}%</span>
+                            </div>
+                          </div>
+
+                          {/* Evidence badge */}
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                            conf.evidenceLevel === 'Alta' ? 'bg-emerald-500/20 text-emerald-400' :
+                            conf.evidenceLevel === 'Moderada' ? 'bg-amber-500/20 text-amber-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {conf.evidenceLevel === 'Alta' ? '🔬' : conf.evidenceLevel === 'Moderada' ? '📊' : '⚠️'} Evidencia {conf.evidenceLevel}
+                          </span>
+                        </div>
+
+                        <p className="text-[9px] text-[#c1cab0]/70 italic leading-snug">
+                          Basado en: {conf.dataUsed}
+                        </p>
+
+                        {conf.limitationNote && (
+                          <p className="text-[9px] text-amber-400/80 flex items-start gap-1">
+                            <span>⚠️</span>
+                            <span>{conf.limitationNote}</span>
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => speakText(msg.id, msg.text)}
+                            className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-md transition-all ${
+                              speakingMsgId === msg.id
+                                ? 'bg-amber-400 text-black animate-pulse'
+                                : 'bg-white/10 hover:bg-white/20 text-white'
+                            }`}
+                            title="Escuchar audio del Coach"
+                          >
+                            <Volume2 className="w-3 h-3" />
+                            <span>{speakingMsgId === msg.id ? 'Hablando...' : 'Audio'}</span>
+                          </button>
+                          <span className="text-[9px] font-mono text-[#c1cab0]/50">{msg.timestamp}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* User message footer */}
+                    {!isAi && (
+                      <div className="flex items-center justify-end mt-1 pt-1 border-t border-white/10">
+                        <span className="text-[9px] font-mono opacity-60">{msg.timestamp}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

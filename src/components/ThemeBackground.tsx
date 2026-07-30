@@ -78,7 +78,8 @@ export const ThemeBackground: React.FC<ThemeBackgroundProps> = ({ theme }) => {
             position: 'absolute', top: '50%', left: '50%',
             width: 420, height: 420,
             transform: 'translate(-50%, -50%)',
-            opacity: 0.05,
+            opacity: 0.15,
+            animation: 'flash-core-pulse 4s ease-in-out infinite',
           }} viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="48" fill="none" stroke={accent} strokeWidth="3.5"/>
             <polygon points="60,5 35,55 50,55 40,95 65,45 50,45" fill={accent}/>
@@ -92,9 +93,9 @@ export const ThemeBackground: React.FC<ThemeBackgroundProps> = ({ theme }) => {
           {/* Rotating shield */}
           <svg style={{
             position: 'absolute', top: '50%', left: '50%',
-            width: 320, height: 320,
+            width: 380, height: 380,
             animation: 'avengers-spin 20s linear infinite',
-            opacity: 0.09,
+            opacity: 0.18,
           }} viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="48" fill="none" stroke={accent} strokeWidth="4"/>
             <circle cx="50" cy="50" r="36" fill="none" stroke={accent} strokeWidth="3"/>

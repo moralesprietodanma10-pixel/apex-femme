@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { PlayerProfile, ThemeColor, ThemeMode, AiTone } from '../types';
 import { POSITIONS_LIST, COUNTRIES_LIST } from '../data/initialData';
+import { getActiveProfileRecord, exportProfileBackup, importProfileBackup } from '../services/profileStorage';
+import { sounds } from '../services/soundEffects';
 import { 
   User, 
   Settings as SettingsIcon, 
@@ -57,9 +59,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
-        setAvatarUrl(result);
+        if (result) setAvatarUrl(result);
       };
-      reader.readAsText(file);
+      reader.readAsDataURL(file);
     }
   };
 
@@ -482,6 +484,62 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="p-3 rounded-xl bg-[var(--bg-card-solid)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-main)] space-y-1 font-mono">
           <p>📲 <strong>En iPhone (Safari):</strong> Toca "Compartir" → "Añadir a la pantalla de inicio".</p>
           <p>🤖 <strong>En Android (Chrome):</strong> Toca los 3 puntos → "Instalar aplicación".</p>
+        </div>
+      </section>
+
+      {/* Profile Backup & Import Section */}
+      <section className="glass-card rounded-2xl p-5 border border-[var(--border-card)] space-y-3">
+        <div className="flex items-center gap-2 theme-accent-text">
+          <FileText className="w-5 h-5" />
+          <h3 className="font-extrabold text-sm uppercase tracking-wider">Copia de Seguridad & Importación JSON</h3>
+        </div>
+        <p className="text-xs text-[var(--text-muted)]">
+          Exporta tu perfil completo con todas tus estadísticas, historial de partidos y medallas en un archivo JSON o importa una copia de seguridad existente.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-2 pt-1">
+          <button
+            type="button"
+            onClick={() => {
+              const activeRecord = getActiveProfileRecord();
+              if (activeRecord) {
+                sounds.playSuccess();
+                exportProfileBackup(activeRecord);
+              }
+            }}
+            className="flex-1 py-3 px-4 bg-[var(--bg-input)] hover:border-[var(--accent-color)] text-[var(--text-main)] font-bold text-xs rounded-xl border border-[var(--border-subtle)] transition-all flex items-center justify-center gap-2"
+          >
+            📥 Exportar Copia de Seguridad JSON
+          </button>
+
+          <label className="flex-1 py-3 px-4 theme-accent-bg hover:opacity-95 text-[#0b1326] font-black text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-2 text-center">
+            📤 Importar Perfil desde JSON
+            <input
+              type="file"
+              accept=".json"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  const text = event.target?.result as string;
+                  if (text) {
+                    const imported = importProfileBackup(text);
+                    if (imported) {
+                      sounds.playLevelUp();
+                      onUpdateProfile(imported.profile);
+                      alert(`✅ ¡Perfil de ${imported.profile.name} importado con éxito!`);
+                    } else {
+                      sounds.playError();
+                      alert('❌ El archivo JSON no tiene un formato válido de perfil APEX.');
+                    }
+                  }
+                };
+                reader.readAsText(file);
+              }}
+              className="hidden"
+            />
+          </label>
         </div>
       </section>
 

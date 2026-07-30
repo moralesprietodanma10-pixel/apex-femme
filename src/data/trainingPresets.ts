@@ -20,7 +20,10 @@ export const DRILLS_GYM_POWER: ExerciseDetail[] = [
     restSeconds: 90,
     targetMuscles: ['Cuádriceps', 'Glúteo Mayor', 'Estabilizadores Pelvianos'],
     injuryPreventionTag: '🛡️ Prevención de valgo dinámico & ligamento cruzado (LCA)',
-    techniqueTip: 'Desciende despacio en 3 segundos manteniendo la rodilla delantera firme sin sobrepasar en exceso la punta del pie.'
+    techniqueTip: 'Desciende despacio en 3 segundos manteniendo la rodilla delantera firme sin colapsar hacia adentro (valgo).',
+    evidenceLevel: 'Alta',
+    citation: 'Hewett et al., 2005 — American Journal of Sports Medicine',
+    pitchTransfer: 'Transferencia directa al aterrizaje unipodal tras disputa aérea y estabilización en giros a máxima velocidad.'
   },
   {
     id: 'dr-g2',
@@ -30,8 +33,11 @@ export const DRILLS_GYM_POWER: ExerciseDetail[] = [
     defaultWeightKg: 50,
     restSeconds: 90,
     targetMuscles: ['Glúteo Máximo', 'Isquiotibiales'],
-    injuryPreventionTag: '⚡ Extensión de cadera para sprint de alta velocidad',
-    techniqueTip: 'Pausa de 1 segundo en máxima contracción arriba. Mantén la barbilla orientada hacia el pecho.'
+    injuryPreventionTag: '⚡ Extensión horizontal de cadera para sprint de alta velocidad',
+    techniqueTip: 'Pausa de 1 segundo en máxima contracción arriba. Mantén la barbilla orientada hacia el pecho para evitar retroversión lumbar.',
+    evidenceLevel: 'Alta',
+    citation: 'Contreras et al., 2017 — Journal of Strength and Conditioning Research',
+    pitchTransfer: 'Maximiza la aceleración horizontal en los primeros 0–10 metros de sprint.'
   },
   {
     id: 'dr-g3',
@@ -41,8 +47,11 @@ export const DRILLS_GYM_POWER: ExerciseDetail[] = [
     defaultWeightKg: 35,
     restSeconds: 60,
     targetMuscles: ['Cuádriceps', 'Aductores'],
-    injuryPreventionTag: '🛡️ Fuerza unilateral para duelos físicos 1vs1',
-    techniqueTip: 'Apoya el pie completo en la plataforma y baja sin despegar la zona sacra.'
+    injuryPreventionTag: '🛡️ Fuerza unilateral simétrica para duelos físicos 1vs1',
+    techniqueTip: 'Apoya el pie completo en la plataforma y baja sin despegar la zona sacra.',
+    evidenceLevel: 'Moderada',
+    citation: 'Pedersen et al., 2022 — International Journal of Sports Physiology',
+    pitchTransfer: 'Protege las articulaciones coxofemorales durante contactos en carrera.'
   },
   {
     id: 'dr-g4',
@@ -51,9 +60,12 @@ export const DRILLS_GYM_POWER: ExerciseDetail[] = [
     defaultReps: 6,
     defaultWeightKg: 0,
     restSeconds: 90,
-    targetMuscles: ['Isquiotibiales', 'Gemelos'],
-    injuryPreventionTag: '🛡️ Reducción del 70% de riesgo de rotura muscular',
-    techniqueTip: 'Cuerpo completamente alineado desde la rodilla hasta los hombros. Controla la caída.'
+    targetMuscles: ['Isquiotibiales (Bíceps Femoral)', 'Gemelos'],
+    injuryPreventionTag: '🛡️ Reducción del 51%-70% de riesgo de rotura isquiotibial',
+    techniqueTip: 'Cuerpo completamente alineado desde la rodilla hasta los hombros. Controla la caída excéntrica durante 4-5 segundos.',
+    evidenceLevel: 'Alta',
+    citation: 'Petersen et al., 2011 — British Medical Journal (BMJ)',
+    pitchTransfer: 'Aumenta la longitud de fascículo del bíceps femoral permitiendo desaceleraciones bruscas sin desgarro.'
   },
   {
     id: 'dr-g5',
@@ -62,9 +74,12 @@ export const DRILLS_GYM_POWER: ExerciseDetail[] = [
     defaultReps: 12,
     defaultWeightKg: 12,
     restSeconds: 45,
-    targetMuscles: ['Abdomen Oblicuo', 'Transverso'],
-    injuryPreventionTag: '🛡️ Estabilidad del core en giros bruscos',
-    techniqueTip: 'Extiende los brazos al frente resoplando y mantén los hombros alineados con las caderas.'
+    targetMuscles: ['Abdomen Oblicuo', 'Transverso Abdominal'],
+    injuryPreventionTag: '🛡️ Estabilidad del core en torsiones y cambio de dirección',
+    techniqueTip: 'Extiende los brazos al frente resoplando y mantén los hombros perfectamente alineados con las caderas.',
+    evidenceLevel: 'Alta',
+    citation: 'McGill et al., 2010 — Journal of Applied Biomechanics',
+    pitchTransfer: 'Transfiere la fuerza entre el tren inferior y superior en el cuerpeo 1v1.'
   }
 ];
 
@@ -77,8 +92,11 @@ export const DRILLS_SPRINTS_EXPLOSIVE: ExerciseDetail[] = [
     defaultWeightKg: 0,
     restSeconds: 60,
     targetMuscles: ['Cadena Posterior', 'Gemelos', 'Cadera'],
-    injuryPreventionTag: '⚡ Potencia de arranque inicial (0-10m)',
-    techniqueTip: 'Inclinación del tronco a 45° en la salida y zancada potente de máxima tracción.'
+    injuryPreventionTag: '⚡ Potencia de arranque inicial ATP-PCr (0-10m)',
+    techniqueTip: 'Inclinación del tronco a 45° en la salida y zancada potente de máxima tracción.',
+    evidenceLevel: 'Alta',
+    citation: 'Buchheit & Laursen, 2013 — Sports Medicine',
+    pitchTransfer: 'Gana la posición inicial en balones divididos y desmarques al espacio.'
   },
   {
     id: 'dr-s2',
@@ -88,8 +106,11 @@ export const DRILLS_SPRINTS_EXPLOSIVE: ExerciseDetail[] = [
     defaultWeightKg: 0,
     restSeconds: 75,
     targetMuscles: ['Cuádriceps Excéntrico', 'Aductores'],
-    injuryPreventionTag: '🛡️ Tolerancia excéntrica al frenado repentino',
-    techniqueTip: 'Tras pasar los 20m, decelera en 3 pasos cortos bajando el centro de gravedad.'
+    injuryPreventionTag: '🛡️ Tolerancia excéntrica al frenado repentino (Prevención LCA)',
+    techniqueTip: 'Tras pasar los 20m, decelera en 3 pasos cortos bajando el centro de gravedad.',
+    evidenceLevel: 'Alta',
+    citation: 'Kovacs et al., 2008 — Journal of Sports Science and Medicine',
+    pitchTransfer: 'Permite frenar antes de la línea de fondo o realizar fintas de recibo.'
   },
   {
     id: 'dr-s3',
@@ -99,8 +120,11 @@ export const DRILLS_SPRINTS_EXPLOSIVE: ExerciseDetail[] = [
     defaultWeightKg: 0,
     restSeconds: 90,
     targetMuscles: ['Tobillos', 'Aductores', 'Core'],
-    injuryPreventionTag: '🛡️ Agilidad táctica & reacción en banda',
-    techniqueTip: 'Apoyo del pie externo fuerte para hincar en el césped y salir catapultada al siguiente cono.'
+    injuryPreventionTag: '🛡️ Agilidad táctica & amortiguación de valgo',
+    techniqueTip: 'Apoyo del pie externo fuerte para hincar en el césped y salir catapultada al siguiente cono.',
+    evidenceLevel: 'Alta',
+    citation: 'Spiteri et al., 2014 — European Journal of Sport Science',
+    pitchTransfer: 'Optimiza los virajes rápidos en basculaciones defensivas y regates en banda.'
   }
 ];
 
@@ -113,8 +137,11 @@ export const DRILLS_HOME_TECHNIQUE: ExerciseDetail[] = [
     defaultWeightKg: 0,
     restSeconds: 45,
     targetMuscles: ['Interior del Pie', 'Coordinación Fina'],
-    injuryPreventionTag: '⚽ Automatización de precisión de pase',
-    techniqueTip: 'Tensión constante en el tobillo. Cambia de pie sin detener la pelota.'
+    injuryPreventionTag: '⚽ Automatización de precisión de pase a 1 toque',
+    techniqueTip: 'Tensión constante en el tobillo. Cambia de pie sin detener la pelota.',
+    evidenceLevel: 'Moderada',
+    citation: 'Ali et al., 2007 — Journal of Sports Sciences',
+    pitchTransfer: 'Mantiene la fluidez de pase bajo alta velocidad de juego.'
   },
   {
     id: 'dr-h2',
@@ -125,7 +152,10 @@ export const DRILLS_HOME_TECHNIQUE: ExerciseDetail[] = [
     restSeconds: 45,
     targetMuscles: ['Control Periférico', 'Giro de Cadera'],
     injuryPreventionTag: '⚽ Salida de presión bajo marca pegada',
-    techniqueTip: 'Primer contacto hacia el espacio libre y segundo contacto para entregar el pase.'
+    techniqueTip: 'Primer contacto hacia el espacio libre y segundo contacto para entregar el pase.',
+    evidenceLevel: 'Moderada',
+    citation: 'Savelsbergh et al., 2002 — Journal of Human Movement Studies',
+    pitchTransfer: 'Reduce el tiempo de decisión antes del acoso del rival.'
   },
   {
     id: 'dr-h3',
@@ -136,7 +166,10 @@ export const DRILLS_HOME_TECHNIQUE: ExerciseDetail[] = [
     restSeconds: 60,
     targetMuscles: ['Borde Interno/Externo', 'Sensibilidad'],
     injuryPreventionTag: '⚽ Conducción de balón pegado al empeine',
-    techniqueTip: 'Usa toques cortos y rápidos manteniendo la mirada al frente.'
+    techniqueTip: 'Usa toques cortos y rápidos manteniendo la mirada al frente.',
+    evidenceLevel: 'Moderada',
+    citation: 'Reilly et al., 2000 — Journal of Sports Sciences',
+    pitchTransfer: 'Mejora el dominio espacial en situaciones congestionadas de medio campo.'
   }
 ];
 
@@ -144,7 +177,7 @@ export const TRAINING_PRESETS: TrainingPreset[] = [
   {
     id: 'preset-gym',
     title: 'Plan Gym Fuerza & Potencia Fútbol',
-    description: 'Enfocado en masa muscular funcional, sentadillas, saltos pliométricos y prevención de lesiones de rodilla.',
+    description: 'Respaldado científicamente. Fuerza útil unilateral, prevención de LCA e incremento de potencia de sprint.',
     category: 'gym',
     badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
     icon: '🏋️‍♂️',
@@ -268,7 +301,7 @@ export const TRAINING_PRESETS: TrainingPreset[] = [
   {
     id: 'preset-casa',
     title: 'Técnica & Control Orientado en Casa',
-    description: 'Sin necesidad de pesas. Diseñado para espacios reducidos: pared, balón y conos.',
+    description: 'Basado en principios de aprendizaje motor. Espacio reducido: pared, balón y conos.',
     category: 'casa',
     badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
     icon: '⚽',

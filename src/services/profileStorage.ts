@@ -6,8 +6,12 @@ import {
   INITIAL_CHALLENGES, 
   INITIAL_BADGES 
 } from '../data/initialData';
+import { safeJsonParse, sanitizeObject } from '../utils/security';
+
+export const CURRENT_SCHEMA_VERSION = '1.2';
 
 export interface FullProfileRecord {
+  schemaVersion?: string;
   id: string;
   lastActive: string; // ISO date string
   profile: PlayerProfile;
@@ -24,26 +28,55 @@ const SESSION_KEY = 'apex_femme_session_active';
 
 // Generate safe unique ID
 export function generateProfileId(): string {
-  return `prof_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  return `prof_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 }
 
-// Get all saved profiles
+/**
+ * Migration engine: Upgrades legacy data structures to current schema
+ */
+export function migrateProfileRecord(record: any): FullProfileRecord {
+  if (!record || typeof record !== 'object') {
+    throw new Error('Invalid profile record object');
+  }
+
+  const migrated: FullProfileRecord = {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    id: record.id || generateProfileId(),
+    lastActive: record.lastActive || new Date().toISOString(),
+    profile: {
+      ...INITIAL_PLAYER_PROFILE,
+      ...(record.profile || {})
+    },
+    weeklySchedule: Array.isArray(record.weeklySchedule) ? record.weeklySchedule : INITIAL_WEEKLY_SCHEDULE,
+    matchLogs: Array.isArray(record.matchLogs) ? record.matchLogs : [],
+    chatHistory: Array.isArray(record.chatHistory) ? record.chatHistory : INITIAL_CHAT_HISTORY,
+    challenges: Array.isArray(record.challenges) ? record.challenges : INITIAL_CHALLENGES,
+    badges: Array.isArray(record.badges) ? record.badges : INITIAL_BADGES
+  };
+
+  return migrated;
+}
+
+// Get all saved profiles safely with auto-migration
 export function getSavedProfiles(): FullProfileRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_PROFILES_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
+    const parsed = safeJsonParse<any[]>(raw, []);
+
+    if (Array.isArray(parsed)) {
+      return parsed.map(p => migrateProfileRecord(p));
+    }
   } catch (e) {
-    console.error('Error loading saved profiles:', e);
+    console.error('Error loading and migrating saved profiles:', e);
   }
   return [];
 }
 
-// Save all profiles array
+// Save all profiles array with sanitization
 function saveAllProfiles(profiles: FullProfileRecord[]) {
   try {
-    localStorage.setItem(STORAGE_PROFILES_KEY, JSON.stringify(profiles));
+    const sanitized = sanitizeObject(profiles);
+    localStorage.setItem(STORAGE_PROFILES_KEY, JSON.stringify(sanitized));
   } catch (e) {
     console.error('Error saving profiles to localStorage:', e);
   }
@@ -51,17 +84,25 @@ function saveAllProfiles(profiles: FullProfileRecord[]) {
 
 // Get active profile ID
 export function getActiveProfileId(): string | null {
-  return localStorage.getItem(STORAGE_ACTIVE_ID_KEY);
+  try {
+    return localStorage.getItem(STORAGE_ACTIVE_ID_KEY);
+  } catch {
+    return null;
+  }
 }
 
 // Set active profile ID
 export function setActiveProfileId(id: string | null) {
-  if (id) {
-    localStorage.setItem(STORAGE_ACTIVE_ID_KEY, id);
-    localStorage.setItem(SESSION_KEY, 'true');
-  } else {
-    localStorage.removeItem(STORAGE_ACTIVE_ID_KEY);
-    localStorage.removeItem(SESSION_KEY);
+  try {
+    if (id) {
+      localStorage.setItem(STORAGE_ACTIVE_ID_KEY, id);
+      localStorage.setItem(SESSION_KEY, 'true');
+    } else {
+      localStorage.removeItem(STORAGE_ACTIVE_ID_KEY);
+      localStorage.removeItem(SESSION_KEY);
+    }
+  } catch (e) {
+    console.error('Error updating active profile ID:', e);
   }
 }
 
@@ -73,7 +114,6 @@ export function getActiveProfileRecord(): FullProfileRecord | null {
     const found = profiles.find(p => p.id === activeId);
     if (found) return found;
   }
-  // Return first profile if available
   return profiles.length > 0 ? profiles[0] : null;
 }
 
@@ -81,8 +121,9 @@ export function getActiveProfileRecord(): FullProfileRecord | null {
 export function saveProfileRecord(record: FullProfileRecord) {
   const profiles = getSavedProfiles();
   const index = profiles.findIndex(p => p.id === record.id);
-  const updatedRecord = {
+  const updatedRecord: FullProfileRecord = {
     ...record,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     lastActive: new Date().toISOString()
   };
 
@@ -148,6 +189,7 @@ export function createNewProfileRecord(params: {
   };
 
   const newRecord: FullProfileRecord = {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
     id,
     lastActive: new Date().toISOString(),
     profile: freshProfile,
@@ -187,13 +229,13 @@ export function exportProfileBackup(record: FullProfileRecord) {
 // Import profile from JSON object
 export function importProfileBackup(rawJson: string): FullProfileRecord | null {
   try {
-    const parsed = JSON.parse(rawJson) as FullProfileRecord;
+    const parsed = safeJsonParse<any>(rawJson, null);
     if (parsed && parsed.profile && parsed.profile.name) {
-      // Ensure unique ID on import to avoid conflicts
-      parsed.id = generateProfileId();
-      parsed.lastActive = new Date().toISOString();
-      saveProfileRecord(parsed);
-      return parsed;
+      const migrated = migrateProfileRecord(parsed);
+      migrated.id = generateProfileId();
+      migrated.lastActive = new Date().toISOString();
+      saveProfileRecord(migrated);
+      return migrated;
     }
   } catch (e) {
     console.error('Error parsing profile backup JSON:', e);

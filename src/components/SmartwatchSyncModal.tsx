@@ -273,8 +273,24 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
     { id: 'zones', label: 'Zonas FC', icon: <Activity className="w-3.5 h-3.5" /> },
   ];
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-smartwatch-title"
+      className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+    >
       <div
         className="glass-panel w-full max-w-lg rounded-3xl border border-[var(--border-card)] shadow-2xl animate-fade-in max-h-[92vh] overflow-y-auto"
         style={{ background: 'rgba(11,19,38,0.97)' }}
@@ -286,7 +302,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
               <Watch className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base text-[var(--text-main)] leading-tight">
+              <h3 id="modal-smartwatch-title" className="font-extrabold text-base text-[var(--text-main)] leading-tight">
                 Centro de Biometría &amp; Reloj
               </h3>
               <p className="text-[10px] text-[var(--text-muted)] font-mono">
@@ -297,8 +313,10 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-[var(--text-muted)] hover:text-[var(--text-main)] p-1.5 rounded-xl transition-colors"
+            aria-label="Cerrar modal de biometría"
+            className="text-[var(--text-muted)] hover:text-[var(--text-main)] p-1.5 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent-color)]"
           >
             <X className="w-5 h-5" />
           </button>

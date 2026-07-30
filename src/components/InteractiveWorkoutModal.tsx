@@ -353,7 +353,33 @@ export const InteractiveWorkoutModal: React.FC<InteractiveWorkoutModalProps> = (
                   {m}
                 </span>
               ))}
+
+              {currentExercise.evidenceLevel && (
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                  currentExercise.evidenceLevel === 'Alta' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' :
+                  currentExercise.evidenceLevel === 'Moderada' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' :
+                  'bg-red-500/20 text-red-400 border border-red-500/40'
+                }`}>
+                  🔬 Evidencia {currentExercise.evidenceLevel}
+                </span>
+              )}
             </div>
+
+            {/* Scientific Citation & Pitch Transfer */}
+            {(currentExercise.citation || currentExercise.pitchTransfer) && (
+              <div className="bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20 text-xs space-y-1">
+                {currentExercise.citation && (
+                  <p className="text-[10px] font-mono text-emerald-400/90 font-bold">
+                    📚 Respaldado por: {currentExercise.citation}
+                  </p>
+                )}
+                {currentExercise.pitchTransfer && (
+                  <p className="text-[11px] text-[var(--text-main)] font-medium leading-snug">
+                    ⚡ <span className="font-extrabold text-emerald-400">Transferencia al campo:</span> {currentExercise.pitchTransfer}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Technique Tip */}
             {currentExercise.techniqueTip && (

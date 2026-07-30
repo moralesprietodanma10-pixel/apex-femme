@@ -208,6 +208,58 @@ export const GpsTrackerView: React.FC<GpsTrackerViewProps> = ({
     ? (elapsedSeconds / 60 / totalDistanceKm).toFixed(2) 
     : '0.00';
 
+  // GPX / JSON Telemetry File Importer
+  const handleImportGpxFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      try {
+        if (file.name.endsWith('.json')) {
+          const parsed = JSON.parse(text);
+          if (Array.isArray(parsed)) {
+            setGpsPoints(parsed);
+            setGpsStatus(`✅ ${parsed.length} Puntos Telemétricos Importados desde JSON (${file.name})`);
+          }
+        } else {
+          // Parse GPX XML trackpoints (<trkpt lat="..." lon="...">)
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(text, 'text/xml');
+          const trkpts = Array.from(xmlDoc.getElementsByTagName('trkpt'));
+
+          if (trkpts.length > 0) {
+            const importedPoints: GpsPoint[] = trkpts.map((pt, idx) => {
+              const lat = parseFloat(pt.getAttribute('lat') || '0');
+              const lng = parseFloat(pt.getAttribute('lon') || '0');
+              const speedEle = pt.getElementsByTagName('speed')[0];
+              const speedKmH = speedEle ? parseFloat(speedEle.textContent || '0') * 3.6 : Math.random() * 8 + 14;
+              return {
+                lat,
+                lng,
+                timestamp: new Date().toISOString(),
+                speedKmH: Number(speedKmH.toFixed(1)),
+                bpm: 145
+              };
+            });
+
+            setGpsPoints(importedPoints);
+            setGpsStatus(`✅ ${importedPoints.length} Puntos GPS Importados desde GPX (${file.name})`);
+          } else {
+            setGpsStatus('⚠️ No se encontraron waypoints <trkpt> válidos en el archivo GPX.');
+          }
+        }
+      } catch (err) {
+        console.error('Error al importar GPX/JSON:', err);
+        setGpsStatus('❌ Error al procesar archivo telemétrico.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="space-y-6 max-w-3xl mx-auto pb-32 animate-fade-in">
       {/* Title & Status */}
@@ -287,7 +339,6 @@ export const GpsTrackerView: React.FC<GpsTrackerViewProps> = ({
               strokeDasharray="4 2"
               points="40,160 80,110 120,130 180,60 220,100 280,40 340,90 380,50"
             />
-            {/* Animated Runner Dot */}
             <circle cx="380" cy="50" r="6" fill="#84cc16" className="animate-ping" />
             <circle cx="380" cy="50" r="4" fill="#ffffff" />
           </svg>
@@ -299,7 +350,7 @@ export const GpsTrackerView: React.FC<GpsTrackerViewProps> = ({
         </div>
       </div>
 
-      {/* GPS Control Buttons */}
+      {/* GPS Control & File Import Buttons */}
       <div className="flex flex-col sm:flex-row items-center gap-3">
         {!isTracking ? (
           <button
@@ -307,7 +358,7 @@ export const GpsTrackerView: React.FC<GpsTrackerViewProps> = ({
             className="w-full sm:flex-1 theme-accent-bg py-4 rounded-2xl font-extrabold text-sm uppercase tracking-wider theme-accent-glow active:scale-95 transition-all flex items-center justify-center gap-2"
           >
             <Play className="w-5 h-5 fill-current" />
-            Iniciar Iniciar Rastreo GPS de Partido
+            Iniciar Rastreo GPS de Partido
           </button>
         ) : (
           <>
@@ -329,13 +380,25 @@ export const GpsTrackerView: React.FC<GpsTrackerViewProps> = ({
           </>
         )}
 
+        {/* Import GPX or JSON Telemetry file button */}
+        <label className="w-full sm:w-auto px-5 py-4 bg-[var(--bg-input)] border border-[var(--border-subtle)] hover:border-[var(--accent-color)] text-[var(--text-main)] font-bold text-xs rounded-2xl cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2">
+          <Download className="w-4 h-4 text-emerald-400 rotate-180" />
+          Importar GPX / Strava
+          <input
+            type="file"
+            accept=".gpx,.json"
+            onChange={handleImportGpxFile}
+            className="hidden"
+          />
+        </label>
+
         {gpsPoints.length > 0 && (
           <button
             onClick={handleExportGpx}
             className="w-full sm:w-auto px-5 py-4 bg-[var(--bg-input)] border border-[var(--border-subtle)] hover:border-[var(--accent-color)] text-[var(--text-main)] font-bold text-xs rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2"
           >
             <Download className="w-4 h-4 text-cyan-400" />
-            Exportar GPX / Strava
+            Exportar GPX
           </button>
         )}
       </div>

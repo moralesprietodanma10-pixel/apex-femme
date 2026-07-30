@@ -27,7 +27,7 @@ export const COUNTRIES_LIST = [
   { code: "FRA", name: "Francia", flag: "🇫🇷" },
   { code: "GER", name: "Alemania", flag: "🇩🇪" },
   { code: "ENG", name: "Inglaterra", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿" },
-  { code: "AUS", name: "Australia", flag: "🇦🇺 text" },
+  { code: "AUS", name: "Australia", flag: "🇦🇺" },
   { code: "CHI", name: "Chile", flag: "🇨🇱" },
   { code: "URU", name: "Uruguay", flag: "🇺🇾" }
 ];
@@ -244,7 +244,40 @@ export const INITIAL_PLAYER_PROFILE: PlayerProfile = {
   playerCardPhotoUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuCpUdoJ5pbwgzwCP2CzNtc2n4PZ3Be1w_E_iPlfdlmg-keoe4F2MHnr7fU2CVpdr908cxi6i2VhpVWioVceqWuG1eR6ui3ZIRaUmHJgxpqTeeMzjuKnCBQGzs2ktpV35ExCTnHEWn6HVWQ2GXO7K4xaZ8Ris0kGJIBoYdd71va7_JvZaBXRyayov1lEPzxXHHU7YCI8QclTw6u-Kzif3U06mgM7-fOV1ZBCtsSqjcCMX8GfY_X1PdMyRg",
   themeColor: 'flash',
   themeMode: 'dark',
-  mentorId: 'mentor-1'
+  mentorId: 'mentor-1',
+  // V12 — Weekly trends for contextual data display in Dashboard
+  weeklyTrends: {
+    minutes: {
+      current: 280,
+      previousWeek: 245,
+      monthlyAvg: 260,
+      unit: 'min',
+      label: 'Volumen Mensual',
+      goalValue: 320
+    },
+    rating: {
+      current: 8.5,
+      previousWeek: 7.8,
+      monthlyAvg: 8.1,
+      unit: '/10',
+      label: 'Rating Promedio'
+    },
+    distance: {
+      current: 7.8,
+      previousWeek: 6.9,
+      monthlyAvg: 7.2,
+      unit: 'km',
+      label: 'Distancia por Partido',
+      goalValue: 8.5
+    },
+    recoveries: {
+      current: 28,
+      previousWeek: 22,
+      monthlyAvg: 24,
+      unit: 'recuperaciones',
+      label: 'Recuperaciones/Mes'
+    }
+  }
 };
 
 export const INITIAL_WEEKLY_SCHEDULE: ScheduleDay[] = [
