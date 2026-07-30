@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import WelcomeScreen, { saveProfile, clearProfile } from './components/WelcomeScreen';
+import WelcomeScreen from './components/WelcomeScreen';
+import { 
+  FullProfileRecord, 
+  getActiveProfileRecord, 
+  saveProfileRecord, 
+  setActiveProfileId 
+} from './services/profileStorage';
 import { 
   PlayerProfile, 
   ScheduleDay, 
@@ -228,31 +234,71 @@ function generateAIResponse(input: string, profile: PlayerProfile, watch: Smartw
 
 
 export default function App() {
-  // ─── Session / Welcome Screen ───────────────────────────────
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return localStorage.getItem(SESSION_KEY) === 'true';
+  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(() => {
+    const rec = getActiveProfileRecord();
+    return rec ? rec.id : null;
   });
 
-  const handleEnterApp = (profile: PlayerProfile) => {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return activeProfileId !== null;
+  });
+
+  const initialRecord = getActiveProfileRecord();
+
+  // Load state from active profile record or use defaults
+  const [playerProfile, setPlayerProfile] = useState<PlayerProfile>(() => {
+    return initialRecord ? initialRecord.profile : INITIAL_PLAYER_PROFILE;
+  });
+
+  const [weeklySchedule, setWeeklySchedule] = useState<ScheduleDay[]>(() => {
+    return initialRecord?.weeklySchedule && initialRecord.weeklySchedule.length > 0
+      ? initialRecord.weeklySchedule
+      : INITIAL_WEEKLY_SCHEDULE;
+  });
+
+  const [matchLogs, setMatchLogs] = useState<MatchLog[]>(() => {
+    return initialRecord?.matchLogs || [];
+  });
+
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
+    return initialRecord?.chatHistory && initialRecord.chatHistory.length > 0
+      ? initialRecord.chatHistory
+      : INITIAL_CHAT_HISTORY;
+  });
+
+  const [challenges, setChallenges] = useState<Challenge[]>(() => {
+    return initialRecord?.challenges && initialRecord.challenges.length > 0
+      ? initialRecord.challenges
+      : INITIAL_CHALLENGES;
+  });
+
+  const [badges, setBadges] = useState<Badge[]>(() => {
+    return initialRecord?.badges && initialRecord.badges.length > 0
+      ? initialRecord.badges
+      : INITIAL_BADGES;
+  });
+
+  const handleSelectProfile = (record: FullProfileRecord) => {
     document.documentElement.style.removeProperty('--accent-color');
     document.documentElement.style.removeProperty('--accent-hover');
     document.documentElement.style.removeProperty('--accent-glow');
-    localStorage.setItem(SESSION_KEY, 'true');
-    saveProfile(profile);
+
+    setActiveProfileId(record.id);
+    setActiveProfileIdState(record.id);
+
+    setPlayerProfile(record.profile);
+    setWeeklySchedule(record.weeklySchedule || INITIAL_WEEKLY_SCHEDULE);
+    setMatchLogs(record.matchLogs || []);
+    setChatHistory(record.chatHistory || INITIAL_CHAT_HISTORY);
+    setChallenges(record.challenges || INITIAL_CHALLENGES);
+    setBadges(record.badges || INITIAL_BADGES);
+
     setIsLoggedIn(true);
-    // Hydrate player name/position from welcome profile
-    setPlayerProfile(prev => ({
-      ...prev,
-      name: profile.name || prev.name,
-      position: profile.position || prev.position,
-      jerseyNumber: `#${(profile as any).number || prev.jerseyNumber.replace('#','') || '10'}`,
-      preferredFoot: (profile as any).dominantFoot || prev.preferredFoot,
-    }));
   };
 
   const handleLogout = () => {
-    localStorage.removeItem(SESSION_KEY);
-    clearProfile();
+    setActiveProfileId(null);
+    setActiveProfileIdState(null);
     setIsLoggedIn(false);
   };
 
@@ -277,60 +323,6 @@ export default function App() {
   const handleUpdateSmartwatchData = (data: Partial<SmartwatchData>) => {
     setSmartwatchData(prev => ({ ...prev, ...data }));
   };
-  // Load state from LocalStorage or use defaults
-  const [playerProfile, setPlayerProfile] = useState<PlayerProfile>(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_PROFILE`);
-      return saved ? JSON.parse(saved) : INITIAL_PLAYER_PROFILE;
-    } catch {
-      return INITIAL_PLAYER_PROFILE;
-    }
-  });
-
-  const [weeklySchedule, setWeeklySchedule] = useState<ScheduleDay[]>(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_SCHEDULE`);
-      return saved ? JSON.parse(saved) : INITIAL_WEEKLY_SCHEDULE;
-    } catch {
-      return INITIAL_WEEKLY_SCHEDULE;
-    }
-  });
-
-  const [matchLogs, setMatchLogs] = useState<MatchLog[]>(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_MATCHES`);
-      return saved ? JSON.parse(saved) : INITIAL_MATCH_LOGS;
-    } catch {
-      return INITIAL_MATCH_LOGS;
-    }
-  });
-
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_CHAT`);
-      return saved ? JSON.parse(saved) : INITIAL_CHAT_HISTORY;
-    } catch {
-      return INITIAL_CHAT_HISTORY;
-    }
-  });
-
-  const [challenges, setChallenges] = useState<Challenge[]>(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_CHALLENGES`);
-      return saved ? JSON.parse(saved) : INITIAL_CHALLENGES;
-    } catch {
-      return INITIAL_CHALLENGES;
-    }
-  });
-
-  const [badges, setBadges] = useState<Badge[]>(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_BADGES`);
-      return saved ? JSON.parse(saved) : INITIAL_BADGES;
-    } catch {
-      return INITIAL_BADGES;
-    }
-  });
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [toast, setToast] = useState<ToastData | null>(null);
@@ -369,24 +361,31 @@ export default function App() {
     });
   };
 
-  // Sync to LocalStorage & document theme
+  // Sync state to LocalStorage (Profile Record & Document Theme)
   useEffect(() => {
+    if (!isLoggedIn || !activeProfileId) return;
+
     try {
       document.documentElement.setAttribute('data-theme', playerProfile.themeColor || 'flash');
       document.documentElement.setAttribute('data-mode', playerProfile.themeMode || 'dark');
       document.documentElement.style.removeProperty('--accent-color');
       document.documentElement.style.removeProperty('--accent-hover');
       document.documentElement.style.removeProperty('--accent-glow');
-      localStorage.setItem(`${STORAGE_KEY}_PROFILE`, JSON.stringify(playerProfile));
-      localStorage.setItem(`${STORAGE_KEY}_SCHEDULE`, JSON.stringify(weeklySchedule));
-      localStorage.setItem(`${STORAGE_KEY}_MATCHES`, JSON.stringify(matchLogs));
-      localStorage.setItem(`${STORAGE_KEY}_CHAT`, JSON.stringify(chatHistory));
-      localStorage.setItem(`${STORAGE_KEY}_CHALLENGES`, JSON.stringify(challenges));
-      localStorage.setItem(`${STORAGE_KEY}_BADGES`, JSON.stringify(badges));
+
+      saveProfileRecord({
+        id: activeProfileId,
+        lastActive: new Date().toISOString(),
+        profile: playerProfile,
+        weeklySchedule,
+        matchLogs,
+        chatHistory,
+        challenges,
+        badges
+      });
     } catch (e) {
-      console.warn("Error saving state to localStorage", e);
+      console.warn("Error saving active profile state to localStorage", e);
     }
-  }, [playerProfile, weeklySchedule, matchLogs, chatHistory, challenges, badges]);
+  }, [isLoggedIn, activeProfileId, playerProfile, weeklySchedule, matchLogs, chatHistory, challenges, badges]);
 
   // Helper for adding XP and handling level ups
   const addXp = (amount: number, reason: string) => {
@@ -758,8 +757,8 @@ export default function App() {
   };
 
   // Show welcome screen if not logged in
-  if (!isLoggedIn) {
-    return <WelcomeScreen onEnter={handleEnterApp} />;
+  if (!isLoggedIn || !activeProfileId) {
+    return <WelcomeScreen onSelectProfile={handleSelectProfile} />;
   }
 
   return (
