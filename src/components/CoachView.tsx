@@ -1,1538 +1,608 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { PlayerProfile, ScheduleDay, ChatMessage, VideoAnalysis, TrainingLocation, TrainingFocus, SmartwatchData, ProactiveAlert } from '../types';
-import { generateProactiveAlerts } from '../services/aiEngineService';
+import React, { useState, useMemo } from 'react';
+import { PlayerProfile, ScheduleDay, ChatMessage, SmartwatchData } from '../types';
 import { 
-  Bot, 
   Send, 
   Sparkles, 
-  RefreshCw, 
-  Dumbbell, 
-  Activity, 
-  Trophy, 
   Zap, 
-  Calendar, 
-  Heart, 
-  CheckCircle2,
-  Video,
-  Upload,
-  Brain,
-  AlertCircle,
-  Lightbulb,
-  Film,
-  Download,
-  FileCode,
-  Clock,
-  MapPin,
-  Home,
-  Plus,
-  Check,
-  Share2,
-  Trash2,
-  ListPlus,
-  Compass,
+  Brain, 
+  AlertCircle, 
+  Check, 
   ArrowRight,
-  Volume2
+  Target,
+  Clock,
+  Layers,
+  Activity,
+  ShieldCheck,
+  Bot,
+  RefreshCw,
+  Trophy,
+  Compass,
+  Cpu,
+  Copy,
+  SlidersHorizontal,
+  Share2
 } from 'lucide-react';
+import { 
+  FOOTBALL_DRILL_DATABASE, 
+  FootballDrill, 
+  getTotalDrills 
+} from '../data/footballDrillDatabase';
+import { sounds } from '../services/soundEffects';
 
 interface CoachViewProps {
   playerProfile: PlayerProfile;
   weeklySchedule: ScheduleDay[];
   chatHistory: ChatMessage[];
   onSendMessage: (userText: string) => void;
-  onRecalculateWeek: () => void;
+  onRecalculateWeek?: () => void;
   onUpdateWeeklySchedule?: (newSchedule: ScheduleDay[]) => void;
   smartwatchData?: SmartwatchData;
 }
 
-// Preset Plans Library
-const PRESET_PLANS = [
-  {
-    id: 'preset-gym-fuerza',
-    name: '🏋️‍♂️ Gimnasio & Fuerza Explosiva Pro',
-    description: 'Enfocado en fuerza útil unilateral, potencia de piernas y estabilización de core.',
-    location: 'gym' as TrainingLocation,
-    focusArea: 'fuerza' as TrainingFocus,
-    categoryTag: 'Gimnasio & Fuerza',
-    icon: Dumbbell,
-    defaultTime: '18:00',
-    defaultDays: ['LUN', 'MIE', 'VIE'],
-    exercises: [
-      'Sentadillas Búlgaras con Mancuernas 4x8 reps',
-      'Hip Thrust en Barra 4x10 reps',
-      'Prensa Unilateral 3x12 reps',
-      'Core Anti-rotación Pallof Press 3x15 seg',
-      'Isquios en máquina tumbada 3x10 reps'
-    ]
-  },
-  {
-    id: 'preset-casa-tecnica',
-    name: '🏠 Técnica & Control Orientado en Casa',
-    description: 'Rutina en espacio reducido. Trabaja el primer toque, perfilamiento y malabarismos.',
-    location: 'casa' as TrainingLocation,
-    focusArea: 'tecnica' as TrainingFocus,
-    categoryTag: 'Técnica en Casa',
-    icon: Activity,
-    defaultTime: '17:00',
-    defaultDays: ['MAR', 'JUE'],
-    exercises: [
-      '100 Tocados de pared a un toque (50 pie derecho / 50 pie izquierdo)',
-      'Control orientado cambiando de perfil con conos 10 min',
-      'Malabarismos de precisión alternando empeine y muslo 5 min',
-      'Conos en 8s a máxima velocidad en salón 4x45 seg'
-    ]
-  },
-  {
-    id: 'preset-sprints-velocidad',
-    name: '⚡ Sprints, Aceleración & Reacción',
-    description: 'Potencia tu zancada inicial, aceleración en 10 metros y freno reactivo.',
-    location: 'pista' as TrainingLocation,
-    focusArea: 'sprints' as TrainingFocus,
-    categoryTag: 'Sprints & Velocidad',
-    icon: Zap,
-    defaultTime: '09:00',
-    defaultDays: ['MAR', 'VIE'],
-    exercises: [
-      'Salida en reacción 10m tras estímulo sonoro/visual 6x',
-      'Sprints 20m con desaceleración controlada 4x',
-      'Circuito en Z con cambios de dirección a 45° 5x',
-      'Aceleración con banda de resistencia 4x8m'
-    ]
-  },
-  {
-    id: 'preset-pliometria',
-    name: '🦘 Pliometría & Salto Explosivo',
-    description: 'Aumenta tu potencia de salto para balones divididos aéreos y explosividad.',
-    location: 'gym' as TrainingLocation,
-    focusArea: 'fuerza' as TrainingFocus,
-    categoryTag: 'Pliometría & Potencia',
-    icon: Trophy,
-    defaultTime: '11:00',
-    defaultDays: ['MIE', 'SAB'],
-    exercises: [
-      'Salto al cajón 4x6 reps',
-      'Saltos unipodales horizontales alternados 3x8 reps',
-      'Rebote reactivo continuo sobre minivallas 4x6',
-      'Estabilidad reactiva de tobillo y sóleo 3x12'
-    ]
-  },
-  {
-    id: 'preset-recuperacion',
-    name: '🧘 Movilidad Hip/Ankle & Recuperación',
-    description: 'Sesión de regeneración articular, soltura muscular y prevención de pubalgia.',
-    location: 'casa' as TrainingLocation,
-    focusArea: 'recuperacion' as TrainingFocus,
-    categoryTag: 'Recuperación Activa',
-    icon: Heart,
-    defaultTime: '19:30',
-    defaultDays: ['DOM'],
-    exercises: [
-      'Apertura de cadera 90/90 2x10 reps',
-      'Foam Roller en Isquios, Cuádriceps y Gemelos 10 min',
-      'Movilidad de tobillo contra pared 3x12 por pierna',
-      'Respiración diafragmática post-esfuerzo 5 min'
-    ]
-  }
-];
+export type QueryCategory = 'all' | 'tactica' | 'tecnica' | 'escaneo' | 'prevencion';
 
 export const CoachView: React.FC<CoachViewProps> = ({
   playerProfile,
   weeklySchedule,
   chatHistory,
   onSendMessage,
-  onRecalculateWeek,
-  onUpdateWeeklySchedule,
   smartwatchData
 }) => {
-  const [activeMode, setActiveMode] = useState<'chat' | 'import' | 'planner' | 'video' | 'nutrition'>('chat');
-  const [importSubTab, setImportSubTab] = useState<'presets' | 'manual' | 'json'>('presets');
-  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+  // Active Module Sub-tab: 'generator' (Generador 1-Click) | 'audit' (Auditoría Real) | 'console' (Consola Táctica)
+  const [activeModule, setActiveModule] = useState<'generator' | 'audit' | 'console'>('generator');
 
-  // V12: Proactive AI alerts computed from current biometrics and trends
-  const proactiveAlerts = useMemo(() => {
-    const watch = smartwatchData || {
-      connected: false, deviceName: '', batteryLevel: 0, heartRateBpm: 64,
-      hrvMs: 68, stepsToday: 0, caloriesBurned: 0, distanceKm: 0,
-      avgPaceMinKm: '0:00 /km', stressScore: 0, sleepRecoveryScore: 0,
-      heartRateZone: 'Reposo', lastSyncTime: ''
-    };
-    return generateProactiveAlerts(playerProfile, watch);
-  }, [playerProfile, smartwatchData]);
-  
-  const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  // Generator Options
+  const [selectedDuration, setSelectedDuration] = useState<number>(45);
+  const [generatedSession, setGeneratedSession] = useState<{
+    name: string;
+    targetGoal: string;
+    drills: FootballDrill[];
+  } | null>(null);
 
-  // Preset Selection State
-  const [selectedPresetTimes, setSelectedPresetTimes] = useState<{ [key: string]: string }>({
-    'preset-gym-fuerza': '18:00',
-    'preset-casa-tecnica': '17:00',
-    'preset-sprints-velocidad': '09:00',
-    'preset-pliometria': '11:00',
-    'preset-recuperacion': '19:30'
-  });
+  // Quick Prompt Category Filter
+  const [selectedQueryCategory, setSelectedQueryCategory] = useState<QueryCategory>('all');
 
-  const [selectedPresetDays, setSelectedPresetDays] = useState<{ [key: string]: string[] }>({
-    'preset-gym-fuerza': ['LUN', 'MIE', 'VIE'],
-    'preset-casa-tecnica': ['MAR', 'JUE'],
-    'preset-sprints-velocidad': ['MAR', 'VIE'],
-    'preset-pliometria': ['MIE'],
-    'preset-recuperacion': ['DOM']
-  });
+  // Copy Feedback Notification
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
-  // Custom Manual Import Form State
-  const [manualDay, setManualDay] = useState<string>('LUN');
-  const [manualTime, setManualTime] = useState<string>('18:00');
-  const [manualLocation, setManualLocation] = useState<TrainingLocation>('gym');
-  const [manualFocus, setManualFocus] = useState<TrainingFocus>('fuerza');
-  const [manualTitle, setManualTitle] = useState<string>('Rutina Gimnasio & Core');
-  const [manualExercises, setManualExercises] = useState<string>(
-    'Sentadillas Búlgaras 4x8\nHip Thrust 4x10\nPrensa Unilateral 3x12\nCore Pallof Press 3x15s'
-  );
-  const [manualDuration, setManualDuration] = useState<number>(60);
-  const [manualIntensity, setManualIntensity] = useState<'baja' | 'moderada' | 'alta'>('alta');
-
-  // JSON Import/Export State
-  const [jsonText, setJsonText] = useState<string>('');
-  const [jsonError, setJsonError] = useState<string | null>(null);
-  const [importNotice, setImportNotice] = useState<string | null>(null);
-
-  // Video Analysis State
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisStep, setAnalysisStep] = useState<string>('');
-  const [analysesList, setAnalysesList] = useState<VideoAnalysis[]>(() => {
-    try {
-      const saved = localStorage.getItem('APEX_FEMME_VIDEO_ANALYSIS');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error(e);
-    }
+  // Chat Input State
+  const [inputQuery, setInputQuery] = useState('');
+  const [localMessages, setLocalMessages] = useState<ChatMessage[]>(() => {
     return [
       {
-        id: 'va-demo-1',
-        title: 'Pase Filtrado Rompiendo Líneas (vs FC Barcelona B)',
-        date: 'Ayer',
-        videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-women-playing-soccer-in-a-stadium-41132-large.mp4',
-        status: 'completed',
-        tacticalScore: 88,
-        strengths: [
-          'Visión periférica rápida antes de recibir el balón.',
-          'Orientación corporal óptima hacia el perfil de pase progresivo.',
-          'Excelente timing para batir la línea de 4 defensoras rivales.'
-        ],
-        areasToImprove: [
-          'Un toque extra de aceleración al desprenderse tras dar el pase.',
-          'Ligero retraso en la transición defensiva si se pierde el balón.'
-        ],
-        recommendedDrills: [
-          'Rondo Táctico 4v2 con transición rápida tras pérdida.',
-          'Trabajo de potencia de zancada en sprints de 10 metros.'
-        ],
-        aiFeedback: 'Analizando tu secuencia en el minuto 34, demostraste una lectura de juego propia de Aitana Bonmatí. Para dar el salto a Nivel 15, reduce el tiempo de toma de decisiones en medio segundo adicional.'
+        id: 'init-msg',
+        sender: 'ai',
+        text: `Consola Táctica APEX MIND activa. He cargado tu perfil (${playerProfile.position || 'MC'}, OVR ${playerProfile.OVR || 78}) y la base de datos de ${getTotalDrills()} ejercicios tácticos. ¿En qué aspecto de tu juego trabajamos hoy?`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ];
   });
 
-  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+  // Calculate Real Performance Audit from LocalStorage
+  const auditMetrics = useMemo(() => {
+    let completedWorkouts: any[] = [];
+    let customPlans: any[] = [];
+    try {
+      const storedWorkouts = localStorage.getItem('apex_femme_completed_football_workouts');
+      if (storedWorkouts) completedWorkouts = JSON.parse(storedWorkouts);
+      const storedPlans = localStorage.getItem('apex_femme_custom_football_plans');
+      if (storedPlans) customPlans = JSON.parse(storedPlans);
+    } catch (e) {}
 
-  const speakText = (msgId: string, text: string) => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      if (speakingMsgId === msgId) {
-        setSpeakingMsgId(null);
-        return;
-      }
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'es-ES';
-      utterance.rate = 1.0;
-      utterance.onend = () => setSpeakingMsgId(null);
-      utterance.onerror = () => setSpeakingMsgId(null);
-      setSpeakingMsgId(msgId);
-      window.speechSynthesis.speak(utterance);
+    const totalSessions = completedWorkouts.length;
+    const weakFootSessions = completedWorkouts.filter(w => w.weakFoot || w.focusFamily === 'weak_foot').length;
+    const weakFootPct = totalSessions > 0 ? Math.round((weakFootSessions / totalSessions) * 100) : 0;
+
+    const scanningDrillsInPlan = customPlans.reduce((acc, p) => {
+      const scanCount = (p.drills || []).filter((d: any) => d.family === 'scanning').length;
+      return acc + scanCount;
+    }, 0);
+
+    return {
+      totalSessions,
+      weakFootPct,
+      scanningDrillsInPlan,
+      weakFootWarning: weakFootPct < 30,
+      scanningWarning: scanningDrillsInPlan < 2
+    };
+  }, []);
+
+  // 1-CLICK SESSION GENERATOR LOGIC
+  const handleGenerateSession = (mins: number) => {
+    sounds.playClick();
+    setSelectedDuration(mins);
+
+    const pos = playerProfile.position || 'MC';
+    let focusDrills: FootballDrill[] = [];
+
+    if (pos.includes('Contención') || pos.includes('Mediocentro') || pos.includes('MC')) {
+      focusDrills = FOOTBALL_DRILL_DATABASE.filter(d => 
+        d.family === 'scanning' || d.family === 'first_touch' || d.family === 'passing' || d.family === 'decision_making'
+      );
+    } else if (pos.includes('Delantera') || pos.includes('Extrema') || pos.includes('ST') || pos.includes('LW')) {
+      focusDrills = FOOTBALL_DRILL_DATABASE.filter(d => 
+        d.family === 'finishing' || d.family === 'dribbling' || d.family === 'ball_mastery'
+      );
+    } else {
+      focusDrills = FOOTBALL_DRILL_DATABASE.filter(d => 
+        d.family === 'passing' || d.family === 'ball_mastery' || d.family === 'turning'
+      );
     }
+
+    const shuffled = [...focusDrills].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, mins >= 45 ? 5 : 3);
+
+    setGeneratedSession({
+      name: `Sesión Táctica ${pos} (${mins} min)`,
+      targetGoal: `Optimización posicional de ${pos}: escaneo visual, primer toque y toma de decisiones`,
+      drills: selected
+    });
   };
 
-  const promptChips = [
-    `⚡ ¿Qué entreno hoy con mi HRV actual?`,
-    `🔍 ¿Qué patrones detectas en mis datos?`,
-    `🦵 Protocolo prevención LCA para ${playerProfile.position}`,
-    `⏰ ¿Cuál es mi carga ACWR esta semana?`,
-    `📥 Importar plan de Gimnasio a las 18:00`,
-    `🥗 Nutrición 3 horas antes del partido`,
-    `😴 ¿Cuál es el protocolo de recuperación óptimo?`,
-    `🎯 Consejo táctico para ${playerProfile.position}`,
+  // Push Generated Session to LocalStorage for Dashboard
+  const handleApplySessionToDashboard = () => {
+    if (!generatedSession) return;
+    sounds.playSuccess();
+    try {
+      const stored = localStorage.getItem('apex_femme_custom_football_plans');
+      const existing = stored ? JSON.parse(stored) : [];
+      const newPlan = {
+        id: `plan-ai-${Date.now()}`,
+        name: generatedSession.name,
+        targetGoal: generatedSession.targetGoal,
+        createdAt: new Date().toLocaleDateString('es-ES'),
+        origin: 'ai',
+        drills: generatedSession.drills
+      };
+      localStorage.setItem('apex_femme_custom_football_plans', JSON.stringify([newPlan, ...existing]));
+    } catch (e) {}
+  };
+
+  // EXPORT DIAGNOSTIC REPORT TO CLIPBOARD (SECONDARY AUTOMATION FEATURE)
+  const handleExportDiagnosticReport = () => {
+    sounds.playSuccess();
+    const reportText = `[APEX MIND OS · INFORME TÁCTICO DE RENDIMIENTO]
+Jugadora: ${playerProfile.name} (${playerProfile.position || 'MC'} · OVR ${playerProfile.OVR || 78})
+Sesiones Completadas: ${auditMetrics.totalSessions}
+Volumen Pierna No Hábil: ${auditMetrics.weakFootPct}% (${auditMetrics.weakFootWarning ? 'REQUERIDO: Aumentar a >=30%' : 'ÓPTIMO'})
+Drills de Escaneo Registrados: ${auditMetrics.scanningDrillsInPlan}
+Diagnóstico Táctico: ${auditMetrics.weakFootWarning ? 'Aumentar trabajo de pierna débil en calentamiento' : 'Mantener volumen bilateral'}
+Base de Datos Activa: ${getTotalDrills()} Drills Futbolísticos Reales`;
+
+    navigator.clipboard.writeText(reportText);
+    setCopyFeedback(true);
+    setTimeout(() => setCopyFeedback(false), 2500);
+  };
+
+  // AUTOMATED QUICK TACTICAL PROMPTS DATABASE (14+ CATEGORIZED PROMPTS)
+  const quickTacticalPrompts = [
+    { category: 'tactica', text: "¿Cómo salir de la presión alta cuando juego de MC?" },
+    { category: 'tactica', text: "¿Cómo dar el pase filtrado rompiendo 2 líneas defensivas?" },
+    { category: 'tactica', text: "¿Cuál es la distancia ideal entre líneas para mi posición de Volante?" },
+    { category: 'tactica', text: "¿Cómo desmarcarme a la espalda de la contención rival?" },
+    
+    { category: 'tecnica', text: "¿Qué ejercicios debo hacer para mejorar mi pierna no hábil esta semana?" },
+    { category: 'tecnica', text: "¿Cómo mejorar mi primer toque orientado en espacios reducidos?" },
+    { category: 'tecnica', text: "¿Cómo dominar el control con el exterior a alta velocidad?" },
+    { category: 'tecnica', text: "¿Qué técnica usar para pases rápidos a 1 sola intención?" },
+    
+    { category: 'escaneo', text: "Recomiéndame una sesión de escaneo táctico de 30 minutos" },
+    { category: 'escaneo', text: "¿Cómo mantener la cabeza arriba durante la conducción rápida?" },
+    { category: 'escaneo', text: "¿Cómo anticipar la presión del rival antes de recibir el balón?" },
+    { category: 'escaneo', text: "¿Cómo mejorar la toma de decisiones bajo fatiga en el minuto 80?" },
+    
+    { category: 'prevencion', text: "¿Cómo adaptar mi entrenamiento si tengo HRV moderado hoy?" },
+    { category: 'prevencion', text: "¿Qué protocolo hacer para reducir el riesgo de lesión de LCA en fútbol femenino?" },
   ];
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory, isTyping]);
+  const filteredPrompts = useMemo(() => {
+    if (selectedQueryCategory === 'all') return quickTacticalPrompts;
+    return quickTacticalPrompts.filter(p => p.category === selectedQueryCategory);
+  }, [selectedQueryCategory]);
 
-  // Handle Chat Input
-  const handleSend = (textToSend?: string) => {
-    const text = textToSend || inputText;
-    if (!text.trim()) return;
+  // CHAT / CONSOLE QUERY HANDLER
+  const handleSendConsoleQuery = (queryText?: string) => {
+    const textToSend = queryText || inputQuery;
+    if (!textToSend.trim()) return;
 
-    if (text.includes("📹 Analizar mi último clip")) {
-      setActiveMode('video');
-      setInputText('');
-      return;
-    }
+    sounds.playClick();
+    const userMsg: ChatMessage = {
+      id: `usr-${Date.now()}`,
+      sender: 'user',
+      text: textToSend,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
 
-    onSendMessage(text);
-    if (!textToSend) setInputText('');
-    setIsTyping(true);
+    setLocalMessages(prev => [...prev, userMsg]);
+    if (!queryText) setInputQuery('');
 
+    // Tactical Intelligence Response Engine
     setTimeout(() => {
-      setIsTyping(false);
-    }, 1200);
-  };
+      const q = textToSend.toLowerCase();
+      let replyText = '';
 
-  // Video Upload
-  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setVideoFile(file);
-      setVideoPreviewUrl(URL.createObjectURL(file));
-    }
-  };
+      if (q.includes('presión') || q.includes('presion') || q.includes('salida')) {
+        replyText = `Para salir de la presión alta como ${playerProfile.position || 'MC'}:\n\n1. **Escaneo Previo**: Realiza mínimo 2 escaneos visuales antes de recibir el balón (Método Jordet).\n2. **Perfilamiento Corporal**: Orienta las caderas a 45° hacia la banda para dominar un campo visual de 180°.\n3. **Primer Toque Aleatorio del Defensor**: Proyecta el control hacia el pasillo libre, nunca estático.\n\nEjercicios recomendados de la base de datos de 571 drills: Escaneo Táctico en Rombo (SC-001) y Control Orientado en Espacio Libre (BM-067).`;
+      } else if (q.includes('filtrado') || q.includes('líneas') || q.includes('lineas')) {
+        replyText = `Técnica de Pase Filtrado para ${playerProfile.position || 'MC'}:\n\n1. **Engaño de Mirada**: Fija la vista en el central rival antes de filtrar hacia el desmarque a la espalda.\n2. **Superficie de Contacto**: Usa el interior duro para pases rasos firmes o el empeine interior para darle comba al espacio.\n3. **Sincronización de Carrera**: El pase debe salir 0.5s antes de que la delantera rompa la línea de fuera de juego.`;
+      } else if (q.includes('pierna') || q.includes('débil') || q.includes('debil') || q.includes('no hábil')) {
+        replyText = `Diagnóstico de Pierna No Hábil:\n\nTu volumen actual de trabajo en pierna no hábil está en ${auditMetrics.weakFootPct}%. La meta metodológica UEFA Pro es de al menos 30%.\n\nRecomendación automatizada:\n- Dedica 10 minutos al inicio de cada entrenamiento a ejercicios exclusivos con la pierna no dominante (ej. Drill BM-020 Pull Push y BM-070 Conducción en Relevos).`;
+      } else if (q.includes('escaneo') || q.includes('visión') || q.includes('vision') || q.includes('cabeza')) {
+        replyText = `Protocolo de Escaneo Visual Táctico (La Masia / Ajax):\n\nLos mediocampistas de clase mundial (Aitana Bonmatí, Xavi) exploran el entorno 0.6 a 0.8 veces por segundo antes de recibir.\n\nRutina sugerida (30 min):\n1. SC-001 Escaneo con Señal Visual (10 min)\n2. SC-004 Rotación 360° con Percepción Aérea (10 min)\n3. BM-069 Tocata con Visión Periférica (10 min)`;
+      } else if (q.includes('lca') || q.includes('lesión') || q.includes('lesion') || q.includes('hrv')) {
+        replyText = `Protocolo de Prevención de Lesiones (Fútbol Femenino & Biomecánica):\n\n1. **Ratio I/Q (Isquios/Cuádriceps)**: Mantén una relación de fuerza ≥60% para proteger el ligamento cruzado anterior (LCA).\n2. **Aterrizaje Unipodal**: Asegura que la rodilla no colapse hacia adentro (valgo de rodilla) al frenar tras un sprint.\n3. **Gestión HRV**: Si el HRV baja de 55ms, reduce los giros a máxima velocidad y prioriza movilidad activa.`;
+      } else {
+        replyText = `Análisis de Inteligencia para ${playerProfile.name} (${playerProfile.position || 'MC'} · OVR ${playerProfile.OVR || 78}):\n\nCon base en tus métricas actuales y la base de datos de 571 drills tácticos, te sugiero enfocar este microciclo en:\n- Control de ritmo y pase filtrado a 1-2 toques.\n- 3 series de 10 min de Ball Mastery en espacio reducido.\n- Mantener racha de entrenamiento activo para optimizar la recuperación del SNC.`;
+      }
 
-  // Run AI Video Analysis
-  const runAiVideoAnalysis = () => {
-    setIsAnalyzing(true);
-    setAnalysisStep('Iniciando visión por computadora APEX Vision Engine...');
-
-    setTimeout(() => setAnalysisStep('Detectando patrones de carrera y postura biomecánica...'), 1000);
-    setTimeout(() => setAnalysisStep('Analizando orientación espacial y toma de decisiones tácticas...'), 2200);
-    setTimeout(() => setAnalysisStep('Evaluando líneas de pase y presión defensiva rival...'), 3400);
-
-    setTimeout(() => {
-      setIsAnalyzing(false);
-      setAnalysisStep('');
-
-      const newAnalysis: VideoAnalysis = {
-        id: `va-${Date.now()}`,
-        title: videoFile ? videoFile.name.replace(/\.[^/.]+$/, "") : 'Secuencia Táctica Individual',
-        date: 'Hoy',
-        videoUrl: videoPreviewUrl || 'https://assets.mixkit.co/videos/preview/mixkit-women-playing-soccer-in-a-stadium-41132-large.mp4',
-        status: 'completed',
-        tacticalScore: Math.floor(Math.random() * 15) + 82,
-        strengths: [
-          `Excelente posicionamiento inicial en zona de ${playerProfile.position}.`,
-          'Postura corporal abierta permitiendo panorama completo del campo.',
-          'Buen control de balón bajo presión inicial.'
-        ],
-        areasToImprove: [
-          'Velocidad de ejecución en el primer toque orientado.',
-          'Giro de cabeza (scanning) debe incrementarse antes de recibir el pase.'
-        ],
-        recommendedDrills: [
-          'Ejercicio de Rondo 5v2 a 1 y 2 toques.',
-          'Entrenamiento de perfilamiento con balón a espaldas.'
-        ],
-        aiFeedback: `¡Análisis completado para ${playerProfile.name}! Tu toma de decisiones es sólida. Si incrementas la frecuencia de scanning en un 15% antes de recibir, serás imparable en la salida de balón.`
+      const aiMsg: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        sender: 'ai',
+        text: replyText,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
-      const updated = [newAnalysis, ...analysesList];
-      setAnalysesList(updated);
-      try {
-        localStorage.setItem('APEX_FEMME_VIDEO_ANALYSIS', JSON.stringify(updated));
-      } catch (e) {
-        console.error(e);
-      }
-
-      setVideoFile(null);
-      setVideoPreviewUrl(null);
-    }, 4500);
-  };
-
-  // Import Preset Plan to Weekly Schedule
-  const handleImportPreset = (preset: typeof PRESET_PLANS[0]) => {
-    const time = selectedPresetTimes[preset.id] || preset.defaultTime;
-    const daysToApply = selectedPresetDays[preset.id] || preset.defaultDays;
-
-    const newSchedule = weeklySchedule.map((day) => {
-      if (daysToApply.includes(day.dayShort)) {
-        return {
-          ...day,
-          activityType: preset.focusArea === 'fuerza' ? ('gimnasio' as const) : ('entrenamiento' as const),
-          title: preset.name.replace(/^[^\s]+\s*/, ''),
-          scheduledTime: time,
-          location: preset.location,
-          focusArea: preset.focusArea,
-          exercises: preset.exercises,
-          isImported: true,
-          durationMin: 60,
-          intensity: 'alta' as const
-        };
-      }
-      return day;
-    });
-
-    if (onUpdateWeeklySchedule) {
-      onUpdateWeeklySchedule(newSchedule);
-    }
-    setImportNotice(`✅ Plan "${preset.name}" importado con éxito a las ${time} para los días (${daysToApply.join(', ')}).`);
-    setTimeout(() => setImportNotice(null), 4000);
-  };
-
-  // Import Full Microcycle (All Week)
-  const handleImportFullWeekMicrocycle = () => {
-    const fullWeekPlan: ScheduleDay[] = [
-      { id: 'sc-1', dayShort: 'LUN', dayFull: 'Lunes', activityType: 'gimnasio', title: 'Gimnasio: Fuerza Unilateral & Core', durationMin: 60, status: 'pending', intensity: 'alta', icon: 'Dumbbell', scheduledTime: '08:30', location: 'gym', focusArea: 'fuerza', exercises: ['Sentadillas Búlgaras 4x8', 'Hip Thrust 4x10', 'Pallof Press 3x15s'], isImported: true },
-      { id: 'sc-2', dayShort: 'MAR', dayFull: 'Martes', activityType: 'entrenamiento', title: 'Sprints, Aceleración & Reacción', durationMin: 50, status: 'pending', intensity: 'alta', icon: 'Zap', scheduledTime: '09:00', location: 'pista', focusArea: 'sprints', exercises: ['Salidas reactivas 10m 6x', 'Sprints 20m 4x', 'Circuito Z 5x'], isImported: true },
-      { id: 'sc-3', dayShort: 'MIE', dayFull: 'Miércoles', activityType: 'entrenamiento', title: 'Técnica & Control Orientado en Casa', durationMin: 45, status: 'pending', intensity: 'moderada', icon: 'Activity', scheduledTime: '17:00', location: 'casa', focusArea: 'tecnica', exercises: ['100 Tocados pared', 'Control orientado', 'Malabarismos 5m'], isImported: true },
-      { id: 'sc-4', dayShort: 'JUE', dayFull: 'Jueves', activityType: 'gimnasio', title: 'Pliometría & Salto Explosivo', durationMin: 50, status: 'pending', intensity: 'alta', icon: 'Trophy', scheduledTime: '18:00', location: 'gym', focusArea: 'fuerza', exercises: ['Salto cajón 4x6', 'Saltos unipodales 3x8'], isImported: true },
-      { id: 'sc-5', dayShort: 'VIE', dayFull: 'Viernes', activityType: 'recuperacion', title: 'Movilidad Articular & Activación Pre-Partido', durationMin: 35, status: 'pending', intensity: 'baja', icon: 'Heart', scheduledTime: '19:00', location: 'casa', focusArea: 'recuperacion', exercises: ['Apertura 90/90', 'Foam roller 10m'], isImported: true },
-      { id: 'sc-6', dayShort: 'SAB', dayFull: 'Sábado', activityType: 'partido', title: 'PARTIDO OFICIAL DE LIGA', durationMin: 90, status: 'pending', intensity: 'alta', icon: 'Trophy', scheduledTime: '18:00', location: 'campo', focusArea: 'partido', exercises: ['Calentamiento dinámico', '90 Minutos de partido'], isImported: true },
-      { id: 'sc-7', dayShort: 'DOM', dayFull: 'Domingo', activityType: 'descanso', title: 'Descanso Total & Estrategia', durationMin: 0, status: 'pending', intensity: 'baja', icon: 'Bed', scheduledTime: '10:00', location: 'casa', focusArea: 'recuperacion', exercises: ['Descanso total', 'Análisis táctico en video'], isImported: true },
-    ];
-
-    if (onUpdateWeeklySchedule) {
-      onUpdateWeeklySchedule(fullWeekPlan);
-    }
-    setImportNotice("🏆 Plan Microciclo Completo (Gym + Sprints + Casa) importado a toda la semana.");
-    setTimeout(() => setImportNotice(null), 4000);
-  };
-
-  // Add Custom Manual Workout
-  const handleAddManualWorkout = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const exercisesList = manualExercises
-      .split('\n')
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-
-    const updatedSchedule = weeklySchedule.map((day) => {
-      if (day.dayShort === manualDay) {
-        return {
-          ...day,
-          activityType: manualFocus === 'fuerza' ? ('gimnasio' as const) : ('entrenamiento' as const),
-          title: manualTitle || 'Entrenamiento Personalizado',
-          scheduledTime: manualTime,
-          location: manualLocation,
-          focusArea: manualFocus,
-          exercises: exercisesList.length > 0 ? exercisesList : ['Ejercicio a elección'],
-          durationMin: manualDuration,
-          intensity: manualIntensity,
-          isImported: true
-        };
-      }
-      return day;
-    });
-
-    if (onUpdateWeeklySchedule) {
-      onUpdateWeeklySchedule(updatedSchedule);
-    }
-
-    setImportNotice(`➕ Sesión "${manualTitle}" programada con éxito para el ${manualDay} a las ${manualTime}.`);
-    setTimeout(() => setImportNotice(null), 4000);
-  };
-
-  // JSON Import
-  const handleImportJson = () => {
-    setJsonError(null);
-    try {
-      if (!jsonText.trim()) {
-        setJsonError('Por favor pega o sube el código JSON de la planificación.');
-        return;
-      }
-
-      const parsed = JSON.parse(jsonText);
-      let newSchedule: ScheduleDay[] = [];
-
-      if (Array.isArray(parsed)) {
-        newSchedule = parsed;
-      } else if (parsed.schedule && Array.isArray(parsed.schedule)) {
-        newSchedule = parsed.schedule;
-      } else {
-        throw new Error('El formato JSON debe incluir una lista de días ("schedule": [...]).');
-      }
-
-      if (onUpdateWeeklySchedule) {
-        onUpdateWeeklySchedule(newSchedule);
-      }
-      setImportNotice('📥 Planificación importada correctamente desde archivo JSON.');
-      setTimeout(() => setImportNotice(null), 4000);
-      setJsonText('');
-    } catch (err: any) {
-      setJsonError(err.message || 'Error al analizar el formato JSON.');
-    }
-  };
-
-  // Export JSON
-  const handleExportJson = () => {
-    const jsonStr = JSON.stringify(weeklySchedule, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `planificacion_entrenamientos_${playerProfile.name.toLowerCase().replace(/\s+/g, '_')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    setImportNotice('📤 Planificación exportada a archivo JSON correctamente.');
-    setTimeout(() => setImportNotice(null), 4000);
-  };
-
-  // Load Sample JSON to textarea
-  const handleLoadSampleJson = () => {
-    const sample = [
-      {
-        id: "sample-1",
-        dayShort: "LUN",
-        dayFull: "Lunes",
-        activityType: "gimnasio",
-        title: "Gimnasio: Tren Inferior & Core",
-        durationMin: 60,
-        status: "pending",
-        intensity: "alta",
-        icon: "Dumbbell",
-        scheduledTime: "08:30",
-        location: "gym",
-        focusArea: "fuerza",
-        exercises: [
-          "Sentadillas Búlgaras 4x8",
-          "Hip Thrust en Barra 4x10",
-          "Pallof Press 3x15s"
-        ],
-        isImported: true
-      },
-      {
-        id: "sample-2",
-        dayShort: "MAR",
-        dayFull: "Martes",
-        activityType: "entrenamiento",
-        title: "Técnica en Casa & Control Orientado",
-        durationMin: 45,
-        status: "pending",
-        intensity: "moderada",
-        icon: "Activity",
-        scheduledTime: "17:00",
-        location: "casa",
-        focusArea: "tecnica",
-        exercises: [
-          "100 Tocados a pared",
-          "Control orientado en espacio reducido"
-        ],
-        isImported: true
-      }
-    ];
-    setJsonText(JSON.stringify(sample, null, 2));
+      setLocalMessages(prev => [...prev, aiMsg]);
+      sounds.playSuccess();
+    }, 500);
   };
 
   return (
-    <div className="space-y-5 max-w-3xl mx-auto pb-32 animate-fade-in">
-      {/* Title & Online Status */}
-      <section className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <h2 className="font-extrabold text-2xl text-[#dae2fd] flex items-center gap-2">
-            APEX Coach IA <Sparkles className="w-5 h-5 text-[#84cc16]" />
-          </h2>
-          <span className="text-[10px] px-2.5 py-1 bg-[#84cc16]/20 text-[#9ee939] border border-[#84cc16]/40 rounded-full font-mono font-bold flex items-center gap-1.5">
-            <span className="w-2 h-2 bg-[#9ee939] rounded-full animate-ping" />
-            ONLINE / EN LÍNEA
-          </span>
-        </div>
-        <p className="text-xs text-[#c1cab0]">
-          Asistente táctico, importador de entrenamientos (gym, casa, sprints) y análisis de video para {playerProfile.position}.
-        </p>
-      </section>
+    <div className="space-y-6 max-w-5xl mx-auto pb-44 animate-fade-in relative">
+      {/* Background Ambience */}
+      <div className="absolute top-0 right-0 -z-10 w-96 h-96 rounded-full bg-cyan-500/5 blur-3xl pointer-events-none" />
+      <div className="absolute top-40 left-0 -z-10 w-80 h-80 rounded-full bg-purple-500/5 blur-3xl pointer-events-none" />
 
-      {/* Mode Navigation Bar */}
-      <nav className="bg-[var(--bg-input)] rounded-2xl p-1 flex items-center border border-[var(--border-subtle)] shadow-inner text-xs font-bold gap-1 overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => setActiveMode('chat')}
-          className={`flex-1 py-2.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 whitespace-nowrap ${
-            activeMode === 'chat'
-              ? 'theme-accent-bg shadow-md'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-          }`}
-        >
-          <Bot className="w-4 h-4" />
-          Chat & Consultas
-        </button>
-
-        <button
-          onClick={() => setActiveMode('import')}
-          className={`flex-1 py-2.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 whitespace-nowrap relative ${
-            activeMode === 'import'
-              ? 'theme-accent-bg shadow-md'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-          }`}
-        >
-          <Download className="w-4 h-4" />
-          Importar Plan
-        </button>
-
-        <button
-          onClick={() => setActiveMode('planner')}
-          className={`flex-1 py-2.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 whitespace-nowrap ${
-            activeMode === 'planner'
-              ? 'theme-accent-bg shadow-md'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-          }`}
-        >
-          <Calendar className="w-4 h-4" />
-          Plan Semanal
-        </button>
-
-        <button
-          onClick={() => setActiveMode('video')}
-          className={`flex-1 py-2.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 whitespace-nowrap ${
-            activeMode === 'video'
-              ? 'theme-accent-bg shadow-md'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-          }`}
-        >
-          <Video className="w-4 h-4" />
-          Análisis Video
-        </button>
-
-        <button
-          onClick={() => setActiveMode('nutrition')}
-          className={`flex-1 py-2.5 px-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 whitespace-nowrap ${
-            activeMode === 'nutrition'
-              ? 'theme-accent-bg shadow-md'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-          }`}
-        >
-          <Heart className="w-4 h-4" />
-          Nutrición IA
-        </button>
-      </nav>
-
-      {/* Global Import Notice Banner */}
-      {importNotice && (
-        <div className="bg-[#84cc16]/20 border border-[#84cc16] text-[#9ee939] p-3.5 rounded-2xl text-xs font-bold flex items-center justify-between animate-fade-in shadow-lg">
-          <span className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#84cc16]" />
-            {importNotice}
-          </span>
-          <button onClick={() => setImportNotice(null)} className="text-[#c1cab0] hover:text-white font-mono">✕</button>
-        </div>
-      )}
-
-      {/* MODE 1: CHAT VIEW */}
-      {activeMode === 'chat' && (
-        <div className="space-y-4">
-
-          {/* V12: Proactive AI Alerts — the coach surfaces insights without being asked */}
-          {proactiveAlerts.filter(a => !dismissedAlerts.has(a.id)).length > 0 && (
-            <div className="space-y-2 animate-slide-up">
-              <p className="text-[10px] font-bold text-[#c1cab0] uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-[#84cc16]" />
-                APEX DETECTÓ ESTO PARA TI
-              </p>
-              {proactiveAlerts.filter(a => !dismissedAlerts.has(a.id)).map(alert => (
-                <div
-                  key={alert.id}
-                  className={`p-3.5 rounded-2xl border flex items-start justify-between gap-3 text-xs transition-all ${
-                    alert.priority === 'high'
-                      ? 'bg-red-500/10 border-red-500/30 text-red-300'
-                      : alert.priority === 'medium'
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                      : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
-                  }`}
-                >
-                  <div className="flex-1 space-y-1.5">
-                    <p className="font-bold flex items-center gap-1.5">
-                      <span>{alert.icon}</span>
-                      {alert.title}
-                    </p>
-                    <p className="text-[11px] opacity-80 leading-snug">{alert.message}</p>
-                    {alert.action && alert.actionQuery && (
-                      <button
-                        onClick={() => handleSend(alert.actionQuery!)}
-                        className="text-[10px] font-bold underline opacity-80 hover:opacity-100 transition-opacity text-left"
-                      >
-                        → {alert.action}
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => setDismissedAlerts(prev => new Set([...prev, alert.id]))}
-                    className="shrink-0 opacity-50 hover:opacity-100 font-mono text-[10px] mt-0.5"
-                    aria-label="Descartar alerta"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
+      {/* HEADER PRINCIPAL DE APEX MIND OS */}
+      <div className="glass-panel p-4 rounded-3xl border border-cyan-500/30 bg-black/70 backdrop-blur-xl flex flex-wrap items-center justify-between gap-4 shadow-2xl">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500 via-purple-600 to-amber-500 p-0.5 shadow-lg">
+            <div className="w-full h-full bg-black rounded-[14px] flex items-center justify-center">
+              <Cpu className="w-5 h-5 text-cyan-400 animate-pulse" />
             </div>
-          )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-black text-base text-white tracking-tight leading-none">
+                APEX MIND OS
+              </span>
+              <span className="px-2.5 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 font-mono text-[9px] font-bold border border-cyan-500/30">
+                IA TÁCTICA AUTOMATIZADA
+              </span>
+            </div>
+            <span className="text-[10px] text-[var(--text-muted)] font-mono">
+              CENTRO DE INTELIGENCIA DE RENDIMIENTO Y ANÁLISIS 24/7
+            </span>
+          </div>
+        </div>
 
-          <div className="space-y-4 min-h-[260px] max-h-[420px] overflow-y-auto pr-1">
-            {chatHistory.map((msg) => {
-              const isAi = msg.sender === 'ai';
-              const conf = msg.confidence;
+        {/* 3 CORE CAPABILITY NAV TABS */}
+        <div className="flex bg-[var(--bg-input)] p-1 rounded-2xl border border-[var(--border-subtle)] overflow-x-auto">
+          {[
+            { id: 'generator', label: 'GENERADOR 1-CLICK' },
+            { id: 'audit', label: 'AUDITORÍA DE RENDIMIENTO' },
+            { id: 'console', label: 'CONSOLA TÁCTICA' },
+          ].map(mod => (
+            <button
+              key={mod.id}
+              onClick={() => { sounds.playClick(); setActiveModule(mod.id as any); }}
+              className={`px-3.5 py-2 rounded-xl text-xs font-mono font-bold whitespace-nowrap transition-all cursor-pointer ${
+                activeModule === mod.id
+                  ? 'bg-cyan-500 text-black font-black shadow-md'
+                  : 'text-[var(--text-muted)] hover:text-white'
+              }`}
+            >
+              {mod.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
+      {/* AUTOMATED BIO-PRESET BANNER (SECONDARY AUTOMATION FEATURE) */}
+      <div className="glass-panel p-4 rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-500/10 via-black/80 to-purple-500/10 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/30">
+            <Zap className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-[9px] font-mono font-bold uppercase text-cyan-400 block">RECOMENDACIÓN AUTOMÁTICA DEL SNC</span>
+            <p className="text-xs font-extrabold text-white">
+              Generar Sesión Táctica de 45m para {playerProfile.position || 'MC'} con Enfoque en Escaneo Táctico
+            </p>
+          </div>
+        </div>
 
-              return (
-                <div key={msg.id} className={`flex gap-3 ${isAi ? '' : 'justify-end'} animate-slide-up`}>
-                  {isAi && (
-                    <div className="w-8 h-8 rounded-xl bg-[#84cc16]/20 border border-[#84cc16]/40 flex items-center justify-center shrink-0 text-[#9ee939]">
-                      <Bot className="w-5 h-5" />
-                    </div>
-                  )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleGenerateSession(45)}
+            className="py-2 px-4 bg-cyan-500 text-black font-black text-xs uppercase rounded-xl shadow-md cursor-pointer hover:bg-cyan-400 transition-all flex items-center gap-1"
+          >
+            <Zap className="w-3.5 h-3.5 fill-current" /> Generar con 1-Clic
+          </button>
+        </div>
+      </div>
 
-                  <div className={`p-4 rounded-2xl max-w-[85%] text-xs sm:text-sm leading-relaxed relative group ${
-                    isAi
-                      ? 'chat-bubble-ai text-[#dae2fd] shadow-lg'
-                      : 'bg-[var(--accent-color)] text-[var(--accent-text)] font-bold rounded-tr-none'
-                  }`}>
-                    <p className="whitespace-pre-line">{msg.text}</p>
+      {/* ═════════════════════════════════════════════════════════════
+          CAPACIDAD 1: GENERADOR TÁCTICO DE SESIONES 1-CLICK
+          ═════════════════════════════════════════════════════════════ */}
+      {activeModule === 'generator' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="glass-card rounded-3xl p-6 sm:p-8 border-2 border-cyan-500/40 bg-black/60 space-y-6 shadow-2xl">
+            <div className="space-y-1 border-b border-white/10 pb-4">
+              <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-cyan-400 block">
+                MOTOR TÁCTICO DE SESIONES 100% AUTOMATIZADO
+              </span>
+              <h2 className="font-black text-xl sm:text-2xl text-white">
+                Generador de Entrenamiento para {playerProfile.position || 'MC'}
+              </h2>
+              <p className="text-xs text-[var(--text-muted)] font-mono">
+                La IA analiza tu posición y extrae ejercicios reales de la base de datos de 571 drills.
+              </p>
+            </div>
 
-                    {/* V12: AI Confidence Engine Badge */}
-                    {isAi && conf && (
-                      <div className="mt-3 pt-2 border-t border-white/10 space-y-1.5">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {/* Confidence bar */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] font-bold text-[#c1cab0] uppercase tracking-wider">Confianza</span>
-                            <div className="flex items-center gap-1">
-                              <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full rounded-full transition-all duration-700"
-                                  style={{
-                                    width: `${conf.confidence}%`,
-                                    backgroundColor: conf.confidence >= 75 ? '#10B981' : conf.confidence >= 50 ? '#F59E0B' : '#EF4444'
-                                  }}
-                                />
-                              </div>
-                              <span className="text-[9px] font-mono font-black" style={{
-                                color: conf.confidence >= 75 ? '#10B981' : conf.confidence >= 50 ? '#F59E0B' : '#EF4444'
-                              }}>{conf.confidence}%</span>
-                            </div>
-                          </div>
+            {/* DURATION SELECTOR */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-mono font-bold text-[var(--text-muted)] uppercase block">
+                SELECCIONA EL TIEMPO DISPONIBLE
+              </span>
+              <div className="grid grid-cols-4 gap-2">
+                {[15, 30, 45, 60].map(mins => (
+                  <button
+                    key={mins}
+                    onClick={() => handleGenerateSession(mins)}
+                    className={`py-3 rounded-2xl font-mono text-xs font-black border transition-all cursor-pointer ${
+                      selectedDuration === mins
+                        ? 'bg-cyan-500 text-black border-cyan-400 shadow-lg scale-102'
+                        : 'bg-black/40 text-[var(--text-muted)] border-white/10 hover:text-white'
+                    }`}
+                  >
+                    {mins} Minutos
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                          {/* Evidence badge */}
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                            conf.evidenceLevel === 'Alta' ? 'bg-emerald-500/20 text-emerald-400' :
-                            conf.evidenceLevel === 'Moderada' ? 'bg-amber-500/20 text-amber-400' :
-                            'bg-red-500/20 text-red-400'
-                          }`}>
-                            {conf.evidenceLevel === 'Alta' ? '🔬' : conf.evidenceLevel === 'Moderada' ? '📊' : '⚠️'} Evidencia {conf.evidenceLevel}
-                          </span>
-                        </div>
-
-                        <p className="text-[9px] text-[#c1cab0]/70 italic leading-snug">
-                          Basado en: {conf.dataUsed}
-                        </p>
-
-                        {conf.limitationNote && (
-                          <p className="text-[9px] text-amber-400/80 flex items-start gap-1">
-                            <span>⚠️</span>
-                            <span>{conf.limitationNote}</span>
-                          </p>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                          <button
-                            onClick={() => speakText(msg.id, msg.text)}
-                            className={`flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-md transition-all ${
-                              speakingMsgId === msg.id
-                                ? 'bg-amber-400 text-black animate-pulse'
-                                : 'bg-white/10 hover:bg-white/20 text-white'
-                            }`}
-                            title="Escuchar audio del Coach"
-                          >
-                            <Volume2 className="w-3 h-3" />
-                            <span>{speakingMsgId === msg.id ? 'Hablando...' : 'Audio'}</span>
-                          </button>
-                          <span className="text-[9px] font-mono text-[#c1cab0]/50">{msg.timestamp}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* User message footer */}
-                    {!isAi && (
-                      <div className="flex items-center justify-end mt-1 pt-1 border-t border-white/10">
-                        <span className="text-[9px] font-mono opacity-60">{msg.timestamp}</span>
-                      </div>
-                    )}
+            {/* GENERATED SESSION PREVIEW */}
+            {generatedSession ? (
+              <div className="p-5 rounded-2xl border border-cyan-500/40 bg-cyan-500/5 space-y-4 animate-fade-in">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-black text-lg text-white">{generatedSession.name}</h3>
+                    <p className="text-xs text-cyan-300 font-mono">{generatedSession.targetGoal}</p>
                   </div>
-                </div>
-              );
-            })}
-
-            {isTyping && (
-              <div className="flex gap-3 items-center">
-                <div className="w-8 h-8 rounded-xl bg-[#84cc16]/20 border border-[#84cc16]/40 flex items-center justify-center text-[#9ee939]">
-                  <Sparkles className="w-4 h-4 animate-spin" />
-                </div>
-                <div className="chat-bubble-ai p-3 rounded-2xl text-xs text-[#c1cab0] italic flex items-center gap-2">
-                  <span>Analizando plan y sugerencias para {playerProfile.name}...</span>
-                  <span className="flex gap-1">
-                    <span className="w-1.5 h-1.5 bg-[#9ee939] rounded-full animate-bounce" />
-                    <span className="w-1.5 h-1.5 bg-[#9ee939] rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1.5 h-1.5 bg-[#9ee939] rounded-full animate-bounce [animation-delay:0.4s]" />
+                  <span className="px-3 py-1 bg-cyan-500/20 text-cyan-300 font-mono text-xs font-bold rounded-lg border border-cyan-500/30">
+                    {selectedDuration} min
                   </span>
                 </div>
+
+                <div className="space-y-2">
+                  <span className="text-[10px] font-mono font-bold text-[var(--text-muted)] uppercase block">
+                    EJERCICIOS SELECCIONADOS POR LA IA ({generatedSession.drills.length})
+                  </span>
+                  <div className="space-y-2">
+                    {generatedSession.drills.map((drill, idx) => (
+                      <div key={drill.id || idx} className="p-3 rounded-xl bg-black/60 border border-white/10 flex justify-between items-center text-xs">
+                        <div>
+                          <span className="font-bold text-white block">{drill.name}</span>
+                          <span className="text-[10px] text-[var(--text-muted)] font-mono">{drill.durationMin || 8} min · {drill.difficulty} · {drill.technicalObjective}</span>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono text-[9px] font-bold border border-purple-500/30 uppercase">
+                          {drill.family}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleApplySessionToDashboard}
+                  className="w-full py-3.5 theme-accent-bg text-black font-black text-xs uppercase tracking-wider rounded-xl theme-accent-glow flex items-center justify-center gap-2 cursor-pointer shadow-xl"
+                >
+                  <Check className="w-4 h-4" /> Cargar esta Sesión al Dashboard
+                </button>
+              </div>
+            ) : (
+              <div className="p-8 rounded-2xl border-2 border-dashed border-cyan-500/30 text-center space-y-3 bg-black/30">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto">
+                  <Zap className="w-6 h-6" />
+                </div>
+                <h3 className="font-bold text-sm text-white">Haz clic en un tiempo para generar tu rutina automatizada.</h3>
+                <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto">
+                  La IA creará una sesión estructurada al instante y podrás enviarla al Dashboard con un solo clic.
+                </p>
+                <button
+                  onClick={() => handleGenerateSession(45)}
+                  className="py-2.5 px-6 theme-accent-bg text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-md cursor-pointer"
+                >
+                  Generar Sesión de 45 Minutos
+                </button>
               </div>
             )}
-            <div ref={chatEndRef} />
-          </div>
-
-          <div className="overflow-x-auto no-scrollbar py-1">
-            <div className="flex gap-2 w-max">
-              {promptChips.map((chip, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSend(chip)}
-                  className="px-3.5 py-1.5 rounded-full border border-[#424936] bg-[#171f33] hover:bg-[#2d3449] hover:border-[#84cc16]/50 transition-colors text-xs font-semibold text-[#dae2fd] whitespace-nowrap flex items-center gap-1.5 active:scale-95"
-                >
-                  <Sparkles className="w-3 h-3 text-[#7bd0ff]" />
-                  {chip}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="glass-panel rounded-2xl p-2 flex items-center gap-2 border border-[#424936]/60 shadow-xl">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Escribe 'Importar plan de gym a las 18:00' o tu duda táctica..."
-              className="flex-1 bg-transparent border-none focus:ring-0 text-xs sm:text-sm text-[#dae2fd] placeholder:text-[#c1cab0]/50 px-3 outline-none"
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={!inputText.trim()}
-              className="p-3 bg-[#00a6e0] hover:bg-[#7bd0ff] text-[#001e2c] rounded-xl shadow-[0_0_15px_rgba(0,166,224,0.4)] active:scale-90 transition-all disabled:opacity-40"
-            >
-              <Send className="w-4 h-4 stroke-[2.5]" />
-            </button>
           </div>
         </div>
       )}
 
-      {/* MODE 2: IMPORTAR PLANIFICACIÓN DE ENTRENAMIENTOS */}
-      {activeMode === 'import' && (
+      {/* ═════════════════════════════════════════════════════════════
+          CAPACIDAD 2: AUDITORÍA DE RENDIMIENTO REAL
+          ═════════════════════════════════════════════════════════════ */}
+      {activeModule === 'audit' && (
         <div className="space-y-6 animate-fade-in">
-          {/* Header Card */}
-          <section className="glass-panel rounded-3xl p-6 border border-[#84cc16]/40 bg-gradient-to-br from-[#171f33] via-[#131b2e] to-[#0f172a] shadow-xl space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-[#84cc16]/20 border border-[#84cc16]/40 flex items-center justify-center text-[#9ee939]">
-                  <Download className="w-6 h-6 stroke-[2.5]" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-lg text-white">Importador de Rutinas y Horarios</h3>
-                  <p className="text-xs text-[#c1cab0]">
-                    Carga tus planes de Gym, Casa, Sprints o Pliometría directamente en tu horario semanal.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={handleImportFullWeekMicrocycle}
-                className="bg-[#84cc16] hover:bg-[#9ee939] text-[#102000] px-4 py-2.5 rounded-2xl font-extrabold text-xs transition-all active:scale-95 shadow-lg shadow-[#84cc16]/20 flex items-center gap-1.5 shrink-0 hidden sm:flex"
-              >
-                <Trophy className="w-4 h-4" /> Importar Plan Semanal Completo Pro
-              </button>
-            </div>
-
-            {/* Sub-tab switcher */}
-            <div className="flex gap-2 border-t border-[#424936]/40 pt-3 text-xs font-bold">
-              <button
-                onClick={() => setImportSubTab('presets')}
-                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
-                  importSubTab === 'presets'
-                    ? 'bg-[#84cc16] text-[#102000]'
-                    : 'bg-[#131b2e] text-[#c1cab0] hover:text-white border border-[#424936]/40'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5" /> Plantillas de Rutinas
-              </button>
-
-              <button
-                onClick={() => setImportSubTab('manual')}
-                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
-                  importSubTab === 'manual'
-                    ? 'bg-[#84cc16] text-[#102000]'
-                    : 'bg-[#131b2e] text-[#c1cab0] hover:text-white border border-[#424936]/40'
-                }`}
-              >
-                <Plus className="w-3.5 h-3.5" /> Diseñar A Medida
-              </button>
-
-              <button
-                onClick={() => setImportSubTab('json')}
-                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 ${
-                  importSubTab === 'json'
-                    ? 'bg-[#84cc16] text-[#102000]'
-                    : 'bg-[#131b2e] text-[#c1cab0] hover:text-white border border-[#424936]/40'
-                }`}
-              >
-                <FileCode className="w-3.5 h-3.5" /> Archivo / JSON
-              </button>
-            </div>
-          </section>
-
-          {/* SUB-TAB 1: PRESETS LIBRARY */}
-          {importSubTab === 'presets' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-extrabold text-sm uppercase tracking-wider text-[#dae2fd] flex items-center gap-2">
-                  <ListPlus className="w-4 h-4 text-[#84cc16]" /> SELECCIONA Y CONFIGURA EL HORARIO DE TUS RUTINAS
-                </h4>
-                <button
-                  onClick={handleImportFullWeekMicrocycle}
-                  className="sm:hidden text-xs text-[#9ee939] font-bold underline"
-                >
-                  Importar Plan Completo
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {PRESET_PLANS.map((preset) => {
-                  const Icon = preset.icon;
-                  const timeVal = selectedPresetTimes[preset.id] || preset.defaultTime;
-                  const daysVal = selectedPresetDays[preset.id] || preset.defaultDays;
-
-                  const toggleDay = (dayCode: string) => {
-                    const current = [...daysVal];
-                    const idx = current.indexOf(dayCode);
-                    if (idx > -1) {
-                      if (current.length > 1) current.splice(idx, 1);
-                    } else {
-                      current.push(dayCode);
-                    }
-                    setSelectedPresetDays(prev => ({ ...prev, [preset.id]: current }));
-                  };
-
-                  return (
-                    <div
-                      key={preset.id}
-                      className="glass-card p-5 rounded-2xl border border-[#424936]/60 space-y-4 flex flex-col justify-between hover:border-[#84cc16]/50 transition-all"
-                    >
-                      <div className="space-y-2.5">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-xl bg-[#84cc16]/20 border border-[#84cc16]/40 flex items-center justify-center text-[#9ee939]">
-                              <Icon className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <span className="text-[10px] font-mono font-bold text-[#7bd0ff] uppercase block">
-                                {preset.categoryTag}
-                              </span>
-                              <h5 className="font-extrabold text-sm text-white">{preset.name}</h5>
-                            </div>
-                          </div>
-                        </div>
-
-                        <p className="text-xs text-[#c1cab0] leading-relaxed">
-                          {preset.description}
-                        </p>
-
-                        {/* Exercises List */}
-                        <div className="bg-[#131b2e] p-3 rounded-xl border border-[#424936]/40 space-y-1">
-                          <p className="text-[10px] font-bold text-[#84cc16] uppercase">Ejercicios Incluidos:</p>
-                          <ul className="text-[11px] text-[#dae2fd] space-y-1">
-                            {preset.exercises.map((ex, i) => (
-                              <li key={i} className="flex items-start gap-1.5">
-                                <span className="text-[#84cc16] font-bold">•</span>
-                                <span>{ex}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-
-                        {/* Time & Days Selector Controls */}
-                        <div className="bg-[#171f33] p-3 rounded-xl border border-[#424936]/50 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <label className="text-[11px] font-bold text-[#c1cab0] flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5 text-[#7bd0ff]" /> Horario de Inicio:
-                            </label>
-                            <input
-                              type="time"
-                              value={timeVal}
-                              onChange={(e) => setSelectedPresetTimes(prev => ({ ...prev, [preset.id]: e.target.value }))}
-                              className="bg-[#0c1322] border border-[#424936] text-[#9ee939] px-2.5 py-1 rounded-lg text-xs font-mono font-bold outline-none focus:border-[#84cc16]"
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <p className="text-[10px] font-bold text-[#c1cab0] flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5 text-[#7bd0ff]" /> Asignar a Días de la Semana:
-                            </p>
-                            <div className="flex gap-1 overflow-x-auto pt-0.5">
-                              {['LUN', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM'].map((d) => {
-                                const selected = daysVal.includes(d);
-                                return (
-                                  <button
-                                    key={d}
-                                    type="button"
-                                    onClick={() => toggleDay(d)}
-                                    className={`px-2 py-1 rounded-lg text-[10px] font-bold font-mono transition-all ${
-                                      selected
-                                        ? 'bg-[#84cc16] text-[#102000]'
-                                        : 'bg-[#0c1322] text-[#c1cab0] hover:text-white border border-[#424936]/40'
-                                    }`}
-                                  >
-                                    {d}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Import Action Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleImportPreset(preset)}
-                        className="w-full bg-[#84cc16] hover:bg-[#9ee939] text-[#102000] py-2.5 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-[#84cc16]/20 flex items-center justify-center gap-2 mt-2"
-                      >
-                        <Download className="w-4 h-4" />
-                        Importar a mi Horario ({timeVal})
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* SUB-TAB 2: MANUAL WORKOUT BUILDER */}
-          {importSubTab === 'manual' && (
-            <form onSubmit={handleAddManualWorkout} className="glass-card p-6 rounded-2xl border border-[#424936]/60 space-y-4">
-              <h4 className="font-extrabold text-base text-white flex items-center gap-2">
-                <Plus className="w-5 h-5 text-[#84cc16]" /> DISEÑAR Y PROGRAMAR ENTRENAMIENTO PERSONALIZADO
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Day */}
-                <div>
-                  <label className="text-xs font-bold text-[#c1cab0] block mb-1">Día de la Semana</label>
-                  <select
-                    value={manualDay}
-                    onChange={(e) => setManualDay(e.target.value)}
-                    className="w-full bg-[#131b2e] border border-[#424936] text-white p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#84cc16]"
-                  >
-                    <option value="LUN">Lunes (LUN)</option>
-                    <option value="MAR">Martes (MAR)</option>
-                    <option value="MIE">Miércoles (MIE)</option>
-                    <option value="JUE">Jueves (JUE)</option>
-                    <option value="VIE">Viernes (VIE)</option>
-                    <option value="SAB">Sábado (SAB)</option>
-                    <option value="DOM">Domingo (DOM)</option>
-                  </select>
-                </div>
-
-                {/* Time */}
-                <div>
-                  <label className="text-xs font-bold text-[#c1cab0] block mb-1">Horario (Hora de Inicio)</label>
-                  <input
-                    type="time"
-                    value={manualTime}
-                    onChange={(e) => setManualTime(e.target.value)}
-                    className="w-full bg-[#131b2e] border border-[#424936] text-[#9ee939] p-2.5 rounded-xl text-xs font-bold font-mono outline-none focus:border-[#84cc16]"
-                  />
-                </div>
-
-                {/* Location */}
-                <div>
-                  <label className="text-xs font-bold text-[#c1cab0] block mb-1">Ubicación de Entrenamiento</label>
-                  <select
-                    value={manualLocation}
-                    onChange={(e) => setManualLocation(e.target.value as TrainingLocation)}
-                    className="w-full bg-[#131b2e] border border-[#424936] text-white p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#84cc16]"
-                  >
-                    <option value="gym">🏋️ Gimnasio</option>
-                    <option value="casa">🏠 En Casa (Espacio Reducido)</option>
-                    <option value="pista">⚡ Pista de Sprints / Aceleración</option>
-                    <option value="campo">⚽ Campo de Fútbol</option>
-                    <option value="otro">🌐 Centro de Rendimiento</option>
-                  </select>
-                </div>
-
-                {/* Focus Area */}
-                <div>
-                  <label className="text-xs font-bold text-[#c1cab0] block mb-1">Enfoque Principal</label>
-                  <select
-                    value={manualFocus}
-                    onChange={(e) => setManualFocus(e.target.value as TrainingFocus)}
-                    className="w-full bg-[#131b2e] border border-[#424936] text-white p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#84cc16]"
-                  >
-                    <option value="fuerza">Fuerza & Masa Muscular</option>
-                    <option value="tecnica">Técnica & Control de Balón</option>
-                    <option value="sprints">Sprints & Aceleración</option>
-                    <option value="recuperacion">Recuperación & Movilidad</option>
-                    <option value="tactica">Táctica & Posicionamiento</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Title */}
-              <div>
-                <label className="text-xs font-bold text-[#c1cab0] block mb-1">Nombre / Título de la Sesión</label>
-                <input
-                  type="text"
-                  value={manualTitle}
-                  onChange={(e) => setManualTitle(e.target.value)}
-                  placeholder="Ej: Sprints 10m + Pliometría en Salón"
-                  className="w-full bg-[#131b2e] border border-[#424936] text-white p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#84cc16]"
-                />
-              </div>
-
-              {/* Exercises List */}
-              <div>
-                <label className="text-xs font-bold text-[#c1cab0] block mb-1">
-                  Lista de Ejercicios (Uno por línea)
-                </label>
-                <textarea
-                  rows={4}
-                  value={manualExercises}
-                  onChange={(e) => setManualExercises(e.target.value)}
-                  placeholder="Sentadillas Búlgaras 4x8&#10;Hip Thrust 4x10&#10;Core Pallof Press 3x15s"
-                  className="w-full bg-[#131b2e] border border-[#424936] text-[#dae2fd] p-3 rounded-xl text-xs outline-none focus:border-[#84cc16] font-mono leading-relaxed"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-[#c1cab0] block mb-1">Duración (minutos)</label>
-                  <input
-                    type="number"
-                    value={manualDuration}
-                    onChange={(e) => setManualDuration(Number(e.target.value))}
-                    className="w-full bg-[#131b2e] border border-[#424936] text-white p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#84cc16]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-[#c1cab0] block mb-1">Intensidad</label>
-                  <select
-                    value={manualIntensity}
-                    onChange={(e) => setManualIntensity(e.target.value as any)}
-                    className="w-full bg-[#131b2e] border border-[#424936] text-white p-2.5 rounded-xl text-xs font-bold outline-none focus:border-[#84cc16]"
-                  >
-                    <option value="baja">Baja (Recuperación)</option>
-                    <option value="moderada">Moderada</option>
-                    <option value="alta">Alta (Máxima carga)</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-[#84cc16] hover:bg-[#9ee939] text-[#102000] py-3 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-lg shadow-[#84cc16]/20 flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> Programar e Importar al Horario ({manualDay} a las {manualTime})
-              </button>
-            </form>
-          )}
-
-          {/* SUB-TAB 3: JSON IMPORT / EXPORT */}
-          {importSubTab === 'json' && (
-            <div className="glass-card p-6 rounded-2xl border border-[#424936]/60 space-y-4">
-              <div className="flex justify-between items-center">
-                <h4 className="font-extrabold text-base text-white flex items-center gap-2">
-                  <FileCode className="w-5 h-5 text-[#84cc16]" /> IMPORTAR Y EXPORTAR CÓDIGO JSON DE ENTRENAMIENTOS
-                </h4>
-                <button
-                  onClick={handleLoadSampleJson}
-                  className="text-xs text-[#7bd0ff] font-bold hover:underline"
-                >
-                  Cargar Ejemplo de JSON
-                </button>
-              </div>
-
-              <p className="text-xs text-[#c1cab0]">
-                Puedes pegar tu código JSON o subir un archivo descargado para actualizar toda tu semana de entrenamiento al instante.
-              </p>
-
-              {jsonError && (
-                <div className="bg-red-500/20 border border-red-500 text-red-300 p-3 rounded-xl text-xs font-bold">
-                  ⚠️ {jsonError}
-                </div>
-              )}
-
-              <textarea
-                rows={8}
-                value={jsonText}
-                onChange={(e) => setJsonText(e.target.value)}
-                placeholder='Pega aquí tu JSON con la planificación de la semana...'
-                className="w-full bg-[#131b2e] border border-[#424936] text-[#9ee939] p-3 rounded-xl text-xs outline-none focus:border-[#84cc16] font-mono leading-relaxed"
-              />
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  type="button"
-                  onClick={handleImportJson}
-                  className="flex-1 bg-[#84cc16] hover:bg-[#9ee939] text-[#102000] py-3 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all active:scale-95 shadow-md shadow-[#84cc16]/20 flex items-center justify-center gap-2"
-                >
-                  <Download className="w-4 h-4" /> Importar Plan desde JSON
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleExportJson}
-                  className="flex-1 bg-[#171f33] hover:bg-[#2d3449] text-white border border-[#424936] py-3 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <Share2 className="w-4 h-4 text-[#7bd0ff]" /> Exportar Mi Horario Actual (JSON)
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* MODE 3: PLANIFICADOR SEMANAL */}
-      {activeMode === 'planner' && (
-        <div className="space-y-4 animate-fade-in">
-          <div className="glass-panel rounded-2xl p-5 border border-[#424936]/60 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#424936]/40 pb-3">
-              <div>
-                <h3 className="font-bold text-sm text-[#dae2fd] flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[#7bd0ff]" />
-                  HORARIO Y PLAN SEMANAL DE ENTRENAMIENTOS
-                </h3>
-                <p className="text-[11px] text-[#c1cab0]">
-                  Visualiza las horas programadas, ubicación (gym/casa/sprints) y lista de ejercicios.
+          <div className="glass-card rounded-3xl p-6 sm:p-8 border-2 border-purple-500/40 bg-black/60 space-y-6 shadow-2xl">
+            <div className="flex flex-wrap justify-between items-start gap-4 border-b border-white/10 pb-4">
+              <div className="space-y-1">
+                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-purple-400 block">
+                  AUDITORÍA DE RENDIMIENTO & PUNTOS CIEGOS
+                </span>
+                <h2 className="font-black text-xl sm:text-2xl text-white">
+                  Diagnóstico Automatizado de Datos Reales
+                </h2>
+                <p className="text-xs text-[var(--text-muted)] font-mono">
+                  La IA analiza continuamente tus sesiones registradas en localStorage sin requerir ingresos manuales.
                 </p>
               </div>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setActiveMode('import')}
-                  className="bg-[#84cc16]/20 hover:bg-[#84cc16]/30 text-[#9ee939] border border-[#84cc16]/40 px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  Importar Nueva Rutina
-                </button>
-
-                <button
-                  onClick={onRecalculateWeek}
-                  className="bg-[#171f33] hover:bg-[#2d3449] text-white border border-[#424936] px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-[#7bd0ff]" />
-                  Ajustar con IA
-                </button>
-              </div>
+              {/* SECONDARY AUTOMATION: EXPORT REPORT BUTTON */}
+              <button
+                onClick={handleExportDiagnosticReport}
+                className="py-2 px-4 bg-purple-500/20 text-purple-300 hover:bg-purple-500 hover:text-black font-mono font-bold text-xs rounded-xl border border-purple-500/40 transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                {copyFeedback ? '¡Informe Copiado!' : 'Copiar Informe Táctico'}
+              </button>
             </div>
 
-            <div className="space-y-3">
-              {weeklySchedule.map((item) => {
-                const isMatch = item.activityType === 'partido';
-                const isRest = item.activityType === 'descanso';
-
-                return (
-                  <div
-                    key={item.id}
-                    className={`p-4 rounded-2xl border transition-all space-y-2.5 ${
-                      isMatch
-                        ? 'bg-[#84cc16]/20 border-[#84cc16] text-[#dae2fd]'
-                        : isRest
-                        ? 'bg-[#131b2e] border-[#424936]/30 text-[#c1cab0]'
-                        : 'bg-[#171f33] border-[#424936]/60 text-[#dae2fd]'
-                    }`}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Audit Card 1: Pierna Débil */}
+              <div className={`p-5 rounded-2xl border space-y-3 bg-black/60 ${auditMetrics.weakFootWarning ? 'border-amber-500/40' : 'border-emerald-500/40'}`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-mono font-bold text-amber-400 uppercase">BALANCE DE PIERNA NO HÁBIL</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${auditMetrics.weakFootWarning ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                    {auditMetrics.weakFootPct}% Trabajo
+                  </span>
+                </div>
+                <p className="text-xs text-white leading-relaxed">
+                  {auditMetrics.weakFootWarning 
+                    ? `Alerta Táctica: Tu volumen en pierna no hábil está en ${auditMetrics.weakFootPct}%. La directiva UEFA recomienda mínimo 30% para mediocampistas.`
+                    : `Excelente balance de pierna no hábil (${auditMetrics.weakFootPct}%). Mantienes bilateralidad alta.`}
+                </p>
+                {auditMetrics.weakFootWarning && (
+                  <button
+                    onClick={() => {
+                      setActiveModule('console');
+                      handleSendConsoleQuery('¿Qué ejercicios debo hacer para mejorar mi pierna no hábil esta semana?');
+                    }}
+                    className="w-full py-2 bg-amber-500/20 text-amber-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1 cursor-pointer hover:bg-amber-500 hover:text-black transition-all"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-xs font-mono shrink-0 ${
-                          isMatch 
-                            ? 'bg-[#84cc16] text-[#102000]' 
-                            : 'bg-[#0c1322] text-[#7bd0ff] border border-[#424936]'
-                        }`}>
-                          {item.dayShort}
-                        </div>
+                    <ArrowRight className="w-3.5 h-3.5" /> Ver Corrección de Pierna Débil
+                  </button>
+                )}
+              </div>
 
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-extrabold text-white">{item.title}</h4>
-                            {item.isImported && (
-                              <span className="text-[9px] font-mono bg-[#84cc16]/20 text-[#9ee939] px-1.5 py-0.2 rounded border border-[#84cc16]/40">
-                                IMPORTADO
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#c1cab0] mt-0.5 font-mono">
-                            <span className="text-[#9ee939] font-bold flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-[#7bd0ff]" /> {item.scheduledTime || '08:00'} hrs
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3 text-[#84cc16]" /> {item.location === 'gym' ? 'Gimnasio' : item.location === 'casa' ? 'En Casa' : item.location === 'pista' ? 'Pista Sprints' : 'Campo'}
-                            </span>
-                            <span>•</span>
-                            <span>{item.durationMin} min</span>
-                            <span>•</span>
-                            <span>Carga {item.intensity}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg ${
-                        item.status === 'completed' 
-                          ? 'bg-[#84cc16]/20 text-[#9ee939] border border-[#84cc16]/40' 
-                          : 'bg-[#0c1322] text-[#c1cab0] border border-[#424936]'
-                      }`}>
-                        {item.status === 'completed' ? 'Completado' : 'Programado'}
-                      </span>
-                    </div>
-
-                    {/* Exercises list if present */}
-                    {item.exercises && item.exercises.length > 0 && (
-                      <div className="bg-[#0c1322] p-3 rounded-xl border border-[#424936]/40 text-xs space-y-1">
-                        <p className="text-[10px] font-bold text-[#84cc16] uppercase">Rutina de Ejercicios:</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-[#c1cab0]">
-                          {item.exercises.map((ex, idx) => (
-                            <div key={idx} className="flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 bg-[#84cc16] rounded-full" />
-                              <span>{ex}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {/* Audit Card 2: Escaneo Táctico */}
+              <div className={`p-5 rounded-2xl border space-y-3 bg-black/60 ${auditMetrics.scanningWarning ? 'border-purple-500/40' : 'border-emerald-500/40'}`}>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-mono font-bold text-purple-300 uppercase">FRECUENCIA DE ESCANEO</span>
+                  <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 text-xs font-mono font-bold">
+                    {auditMetrics.scanningDrillsInPlan} Drills en Planes
+                  </span>
+                </div>
+                <p className="text-xs text-white leading-relaxed">
+                  {auditMetrics.scanningWarning
+                    ? `Punto Ciego Detectado: Tienes solo ${auditMetrics.scanningDrillsInPlan} ejercicios de escaneo visual en tus rutinas.`
+                    : `Buen nivel de estímulo de percepción visual registrado.`}
+                </p>
+                <button
+                  onClick={() => {
+                    setActiveModule('console');
+                    handleSendConsoleQuery('Recomiéndame una sesión de escaneo táctico de 30 minutos');
+                  }}
+                  className="w-full py-2 bg-purple-500/20 text-purple-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1 cursor-pointer hover:bg-purple-500 hover:text-black transition-all"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" /> Consultar Rutina de Escaneo
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODE 4: VIDEO ANALYSIS */}
-      {activeMode === 'video' && (
-        <div className="space-y-6 animate-fade-in">
-          {/* Upload Video Card */}
-          <section className="glass-panel rounded-3xl p-6 border border-purple-500/40 bg-gradient-to-br from-[#171f33] via-[#131b2e] to-[#0f172a] shadow-xl space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300">
-                <Video className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-base text-white">Análisis Táctico de Video con IA APEX</h3>
-                <p className="text-xs text-[#c1cab0]">Sube un video jugando para que la IA evalúe tu postura, visión y toma de decisiones.</p>
-              </div>
+      {/* ═════════════════════════════════════════════════════════════
+          CAPACIDAD 3: CONSOLA TÁCTICA PROACTIVA DE IA
+          ═════════════════════════════════════════════════════════════ */}
+      {activeModule === 'console' && (
+        <div className="space-y-4 animate-fade-in">
+          {/* CATEGORY FILTER FOR QUICK PROMPTS */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-[var(--text-muted)] block">
+                CONSULTAS RÁPIDAS AUTOMATIZADAS POR CATEGORÍA
+              </span>
+              <span className="text-[10px] font-mono text-cyan-400">
+                {filteredPrompts.length} Preguntas Disponibles
+              </span>
             </div>
 
-            {/* Video Input Box */}
-            {!isAnalyzing ? (
-              <div className="border-2 border-dashed border-purple-500/40 hover:border-purple-400 bg-[#0b1326]/60 rounded-2xl p-6 text-center space-y-3 transition-colors">
-                {videoPreviewUrl ? (
-                  <div className="space-y-3">
-                    <video
-                      src={videoPreviewUrl}
-                      controls
-                      className="w-full max-h-56 rounded-xl mx-auto object-cover border border-purple-500/30"
-                    />
-                    <div className="flex justify-center gap-3">
-                      <button
-                        onClick={runAiVideoAnalysis}
-                        className="bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-purple-600/30 active:scale-95 transition-all flex items-center gap-2"
-                      >
-                        <Brain className="w-4 h-4" /> Analizar Video con IA
-                      </button>
-                      <button
-                        onClick={() => { setVideoFile(null); setVideoPreviewUrl(null); }}
-                        className="bg-[#1e293b] text-[#c1cab0] hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-[#424936]"
-                      >
-                        Cambiar Video
-                      </button>
-                    </div>
+            <div className="flex flex-wrap gap-1.5 pb-1">
+              {[
+                { id: 'all', label: 'Todas' },
+                { id: 'tactica', label: 'Táctica & Posición' },
+                { id: 'tecnica', label: 'Pierna Débil & Técnica' },
+                { id: 'escaneo', label: 'Escaneo & Game IQ' },
+                { id: 'prevencion', label: 'Recuperación & Lesiones' },
+              ].map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedQueryCategory(cat.id as QueryCategory)}
+                  className={`px-3 py-1.5 rounded-xl font-mono text-[10px] font-bold border transition-all cursor-pointer ${
+                    selectedQueryCategory === cat.id
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 font-extrabold'
+                      : 'bg-black/40 text-[var(--text-muted)] border-white/10 hover:text-white'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {filteredPrompts.map((promptObj, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSendConsoleQuery(promptObj.text)}
+                  className="p-3 rounded-2xl bg-black/50 hover:bg-cyan-500/20 border border-[var(--border-subtle)] text-left text-xs font-mono text-white transition-all cursor-pointer flex items-center justify-between"
+                >
+                  <span>"{promptObj.text}"</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-cyan-400 shrink-0 ml-2" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* CHAT MESSAGES WINDOW */}
+          <div className="glass-card rounded-3xl p-5 border border-cyan-500/30 bg-black/70 space-y-4 min-h-[350px] max-h-[500px] overflow-y-auto shadow-2xl">
+            {localMessages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                {msg.sender === 'ai' && (
+                  <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 flex items-center justify-center shrink-0">
+                    <Bot className="w-4 h-4" />
                   </div>
-                ) : (
-                  <label className="cursor-pointer block space-y-2">
-                    <Upload className="w-8 h-8 text-purple-400 mx-auto animate-bounce" />
-                    <p className="font-bold text-sm text-white">Arrastra o haz clic para subir tu video (.mp4, .mov)</p>
-                    <p className="text-[11px] text-[#c1cab0]">Duración recomendada: Clips de 10s a 2 minutos de partidos o entrenamientos</p>
-                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={handleVideoChange}
-                      className="hidden"
-                    />
-                  </label>
                 )}
-              </div>
-            ) : (
-              /* AI Video Analysis Loader */
-              <div className="bg-[#0b1326] p-8 rounded-2xl border border-purple-500/50 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-purple-500/20 border-2 border-purple-400 flex items-center justify-center mx-auto text-purple-300 animate-spin">
-                  <Brain className="w-8 h-8" />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-base text-white">La IA está pensando y analizando tu jugada...</h4>
-                  <p className="text-xs text-purple-300 font-mono mt-1 animate-pulse">{analysisStep}</p>
-                </div>
-                <div className="w-full bg-[#1e293b] h-2 rounded-full overflow-hidden max-w-md mx-auto">
-                  <div className="bg-gradient-to-r from-purple-500 to-[#84cc16] h-full animate-pulse w-full" />
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* Historical Video Analyses List */}
-          <section className="space-y-4">
-            <h3 className="font-extrabold text-base text-[#dae2fd] flex items-center gap-2">
-              <Film className="w-5 h-5 text-purple-400" /> HISTORIAL DE ANÁLISIS TÁCTICOS
-            </h3>
-
-            {analysesList.map((analysis) => (
-              <div key={analysis.id} className="glass-card rounded-2xl p-5 border border-purple-500/30 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#424936]/40 pb-3">
-                  <div>
-                    <span className="text-[10px] font-mono font-bold bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded uppercase">
-                      {analysis.date}
-                    </span>
-                    <h4 className="font-extrabold text-base text-white mt-1">{analysis.title}</h4>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#c1cab0]">Puntuación Táctica:</span>
-                    <span className="font-mono text-lg font-extrabold text-[#9ee939] bg-[#84cc16]/20 px-3 py-0.5 rounded-xl border border-[#84cc16]/40">
-                      {analysis.tacticalScore} / 100
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Strengths */}
-                  <div className="bg-[#131b2e] p-3.5 rounded-xl border border-emerald-500/30 space-y-1.5">
-                    <h5 className="font-bold text-xs text-emerald-400 flex items-center gap-1.5 uppercase">
-                      <CheckCircle2 className="w-4 h-4" /> Lo que hiciste excelente
-                    </h5>
-                    <ul className="text-xs text-[#c1cab0] space-y-1 pl-1">
-                      {analysis.strengths.map((s, i) => (
-                        <li key={i} className="flex items-start gap-1.5">
-                          <span className="text-emerald-400 font-bold">•</span>
-                          <span>{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Areas to Improve */}
-                  <div className="bg-[#131b2e] p-3.5 rounded-xl border border-amber-500/30 space-y-1.5">
-                    <h5 className="font-bold text-xs text-amber-400 flex items-center gap-1.5 uppercase">
-                      <AlertCircle className="w-4 h-4" /> Lo que faltó / A mejorar
-                    </h5>
-                    <ul className="text-xs text-[#c1cab0] space-y-1 pl-1">
-                      {analysis.areasToImprove.map((a, i) => (
-                        <li key={i} className="flex items-start gap-1.5">
-                          <span className="text-amber-400 font-bold">•</span>
-                          <span>{a}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {/* AI Detailed Feedback & Drills */}
-                <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-subtle)] space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-bold theme-accent-text">
-                    <Lightbulb className="w-4 h-4 text-amber-400" />
-                    <span>Conclusión del IA Coach:</span>
-                  </div>
-                  <p className="text-xs text-[var(--text-main)] italic leading-relaxed">{analysis.aiFeedback}</p>
-
-                  <div className="pt-2 border-t border-[var(--border-subtle)]">
-                    <p className="text-[11px] font-bold theme-accent-text uppercase mb-1">Ejercicios Recomendados:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {analysis.recommendedDrills.map((d, i) => (
-                        <span key={i} className="text-[11px] bg-[var(--bg-card-solid)] border border-[var(--border-subtle)] text-[var(--text-main)] px-2.5 py-1 rounded-lg">
-                          ⚽ {d}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                <div
+                  className={`p-4 rounded-2xl max-w-xl text-xs leading-relaxed space-y-1 ${
+                    msg.sender === 'user'
+                      ? 'bg-cyan-500 text-black font-bold rounded-tr-none'
+                      : 'bg-black/60 border border-white/10 text-white rounded-tl-none font-mono whitespace-pre-line'
+                  }`}
+                >
+                  <p>{msg.text}</p>
+                  <span className={`text-[8px] block opacity-60 ${msg.sender === 'user' ? 'text-black' : 'text-[var(--text-muted)]'}`}>
+                    {msg.timestamp}
+                  </span>
                 </div>
               </div>
             ))}
-          </section>
-        </div>
-      )}
+          </div>
 
-      {/* Mode 5: Nutrition & Hydration IA Calculator */}
-      {activeMode === 'nutrition' && (
-        <div className="space-y-6 animate-fade-in">
-          <section className="glass-card rounded-3xl p-6 border border-[var(--border-card)] space-y-4">
-            <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
-              <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider theme-accent-text">
-                  NUTRICIÓN E HIDRATACIÓN DE ALTO RENDIMIENTO
-                </span>
-                <h3 className="font-extrabold text-xl text-[var(--text-main)] mt-1">
-                  Plan Macronutricional Pre y Post Matchday
-                </h3>
-              </div>
-              <Heart className="w-6 h-6 theme-accent-text" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-[var(--bg-input)] p-4 rounded-2xl border border-[var(--border-subtle)] space-y-1">
-                <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase">HIDRATACIÓN OBJETIVO</span>
-                <p className="font-mono text-2xl font-black theme-accent-text">2.8 L / día</p>
-                <p className="text-[10px] text-[var(--text-muted)]">+ 500ml Electrolitos durante partido</p>
-              </div>
-
-              <div className="bg-[var(--bg-input)] p-4 rounded-2xl border border-[var(--border-subtle)] space-y-1">
-                <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase">CARBOIDRATOS (RECARGA)</span>
-                <p className="font-mono text-2xl font-black text-cyan-400">6.5 g / kg</p>
-                <p className="text-[10px] text-[var(--text-muted)]">Arroz integral, avena, plátano, boniato</p>
-              </div>
-
-              <div className="bg-[var(--bg-input)] p-4 rounded-2xl border border-[var(--border-subtle)] space-y-1">
-                <span className="text-[10px] text-[var(--text-muted)] font-bold uppercase">PROTEÍNA REGENERADORA</span>
-                <p className="font-mono text-2xl font-black text-amber-400">1.8 g / kg</p>
-                <p className="text-[10px] text-[var(--text-muted)]">Pollo, salmón, huevos, suero aislado</p>
-              </div>
-            </div>
-
-            {/* Matchday Meal Timeline */}
-            <div className="space-y-3 pt-2">
-              <h4 className="font-extrabold text-sm text-[var(--text-main)] uppercase tracking-wider">
-                ⏰ CRONOGRAMA DE ALIMENTACIÓN DÍA DE PARTIDO (KICKOFF 18:00)
-              </h4>
-
-              <div className="space-y-2.5">
-                <div className="bg-[var(--bg-card-solid)] p-4 rounded-2xl border border-[var(--border-subtle)] flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 font-mono font-extrabold text-xs flex items-center justify-center shrink-0">
-                    14:30
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-xs text-[var(--text-main)]">Comida Principal Pre-Partido (3.5h antes)</h5>
-                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                      Pechuga de pavo/pollo a la plancha con 180g de arroz blanco o pasta, 1 cucharada de aceite de oliva y manzana asada. Evitar fibra pesada y grasas saturadas.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-[var(--bg-card-solid)] p-4 rounded-2xl border border-[var(--border-subtle)] flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 font-mono font-extrabold text-xs flex items-center justify-center shrink-0">
-                    17:00
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-xs text-[var(--text-main)]">Snack de Carga Rápida (60 min antes)</h5>
-                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                      1 Plátano maduro + 300ml de bebida isotónica con sodio. Opcional: Gel energético de glucosa-fructosa (ratio 2:1).
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-[var(--bg-card-solid)] p-4 rounded-2xl border border-[var(--border-subtle)] flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 font-mono font-extrabold text-xs flex items-center justify-center shrink-0">
-                    19:50
-                  </div>
-                  <div>
-                    <h5 className="font-bold text-xs text-[var(--text-main)]">Ventana Anabólica Post-Partido (0-45 min)</h5>
-                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                      Batido de proteína de suero aislada (25g) + 50g amilopectina/maltodextrina o yogurt griego con miel y arándanos. Restablece el glucógeno muscular inmediatamente.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+          {/* INPUT BAR */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={inputQuery}
+              onChange={e => setInputQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSendConsoleQuery()}
+              placeholder="Escribe una consulta táctica (ej. '¿cómo mejorar mi visión de juego?')..."
+              className="flex-1 bg-[var(--bg-input)] px-5 py-3.5 rounded-2xl border border-[var(--border-subtle)] text-xs font-mono text-white outline-none focus:border-cyan-400"
+            />
+            <button
+              onClick={() => handleSendConsoleQuery()}
+              className="py-3.5 px-6 theme-accent-bg text-black font-black text-xs uppercase rounded-2xl flex items-center gap-2 cursor-pointer shadow-lg"
+            >
+              <Send className="w-4 h-4" /> Enviar
+            </button>
+          </div>
         </div>
       )}
     </div>

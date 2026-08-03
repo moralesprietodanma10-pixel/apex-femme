@@ -1,5 +1,5 @@
 // Service Worker for APEX Femme PWA Offline Support (Stale-While-Revalidate)
-const CACHE_NAME = 'apex-femme-v2';
+const CACHE_NAME = 'apex-femme-v12-final';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -29,20 +29,22 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  // Network-First strategy to ensure instant updates
   event.respondWith(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.match(event.request).then((cachedResponse) => {
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            cache.put(event.request, networkResponse.clone());
-          }
-          return networkResponse;
-        }).catch(() => {
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cachedResponse) => {
           return cachedResponse || caches.match('/index.html');
         });
-
-        return cachedResponse || fetchPromise;
-      });
-    })
+      })
   );
 });

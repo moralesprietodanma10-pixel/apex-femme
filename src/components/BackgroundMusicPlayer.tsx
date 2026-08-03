@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music, Plus, Trash2, Disc, X, ChevronUp, ListMusic } from 'lucide-react';
+import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music, Plus, Trash2, Disc, X, ChevronUp, Move } from 'lucide-react';
 import { sounds } from '../services/soundEffects';
 
 interface Track {
@@ -45,12 +45,91 @@ export const BackgroundMusicPlayer: React.FC = () => {
   const [volume, setVolume] = useState(0.45);
   const [isMuted, setIsMuted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newUrl, setNewUrl] = useState('');
-  const [progress, setProgress] = useState(0);   // 0–1
-  const [duration, setDuration] = useState(0);   // seconds
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+
+  // ─── DRAGGABLE POSITION STATE ───────────────────────────────────────
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    try {
+      const savedPos = localStorage.getItem('apex_music_player_pos');
+      if (savedPos) return JSON.parse(savedPos);
+    } catch (e) {}
+    // Default position at bottom right
+    return { x: window.innerWidth - 340, y: window.innerHeight - 180 };
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number }>({ x: 0, y: 0, posX: 0, posY: 0 });
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only drag from header or drag handle, not interactive controls
+    if ((e.target as HTMLElement).closest('button, input, a')) return;
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      posX: pos.x,
+      posY: pos.y,
+    };
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('button, input, a')) return;
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      dragStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        posX: pos.x,
+        posY: pos.y,
+      };
+    }
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      const newX = Math.max(10, Math.min(window.innerWidth - 100, dragStartRef.current.posX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 100, dragStartRef.current.posY + dy));
+      setPos({ x: newX, y: newY });
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - dragStartRef.current.x;
+      const dy = e.touches[0].clientY - dragStartRef.current.y;
+      const newX = Math.max(10, Math.min(window.innerWidth - 100, dragStartRef.current.posX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 100, dragStartRef.current.posY + dy));
+      setPos({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        try {
+          localStorage.setItem('apex_music_player_pos', JSON.stringify(pos));
+        } catch (e) {}
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [isDragging, pos]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -59,14 +138,12 @@ export const BackgroundMusicPlayer: React.FC = () => {
     localStorage.setItem('apex_music_playlist', JSON.stringify(playlist));
   }, [playlist]);
 
-  // Sync volume to audio element
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : volume;
     }
   }, [volume, isMuted]);
 
-  // Auto-play when index changes
   useEffect(() => {
     if (audioRef.current && isPlaying) {
       audioRef.current.load();
@@ -74,7 +151,6 @@ export const BackgroundMusicPlayer: React.FC = () => {
     }
   }, [currentIdx]);
 
-  // ESC to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsOpen(false);
@@ -148,157 +224,115 @@ export const BackgroundMusicPlayer: React.FC = () => {
   const handleDeleteTrack = (id: string) => {
     const isCurrentTrack = playlist[currentIdx]?.id === id;
     setPlaylist(prev => prev.filter(t => t.id !== id));
-    if (isCurrentTrack) setCurrentIdx(0);
+    if (isCurrentTrack && playlist.length > 1) {
+      setCurrentIdx(0);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      const cur = audioRef.current.currentTime;
+      const dur = audioRef.current.duration || 1;
+      setCurrentTime(cur);
+      setDuration(dur);
+      setProgress(cur / dur);
+    }
   };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!audioRef.current || !progressRef.current) return;
+    if (!progressRef.current || !audioRef.current) return;
     const rect = progressRef.current.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    audioRef.current.currentTime = pct * duration;
+    const clickX = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, clickX / rect.width));
+    audioRef.current.currentTime = pct * (audioRef.current.duration || 0);
     setProgress(pct);
   };
 
-  const formatTime = (sec: number) => {
-    if (isNaN(sec)) return '0:00';
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${String(s).padStart(2, '0')}`;
+  const formatTime = (s: number) => {
+    if (isNaN(s) || s === 0) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec < 10 ? '0' : ''}${sec}`;
   };
 
   return (
     <>
       <audio
         ref={audioRef}
-        src={currentTrack?.url}
+        src={currentTrack.url}
+        onTimeUpdate={handleTimeUpdate}
         onEnded={handleNext}
-        onTimeUpdate={e => {
-          const el = e.currentTarget;
-          setCurrentTime(el.currentTime);
-          setDuration(el.duration || 0);
-          setProgress(el.duration ? el.currentTime / el.duration : 0);
-        }}
-        onLoadedMetadata={e => setDuration(e.currentTarget.duration)}
+        onError={() => console.warn('Audio source failed to load:', currentTrack.url)}
       />
 
-      {/* ── Floating Widget ── */}
-      <div className="fixed bottom-20 right-4 z-40">
-        {isMinimized ? (
-          /* Floating icon only */
+      {/* DRAGGABLE FLOATING CONTAINER */}
+      <div
+        style={{
+          position: 'fixed',
+          left: `${pos.x}px`,
+          top: `${pos.y}px`,
+          zIndex: 9999,
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        className="select-none transition-shadow"
+      >
+        {/* COLLAPSED WIDGET — ONLY FLOATING DRAGGABLE ICON */}
+        {!isOpen && (
           <button
-            onClick={() => { sounds.playClick(); setIsMinimized(false); }}
-            className="w-11 h-11 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300 hover:scale-110 active:scale-95 relative"
-            style={{ background: 'rgba(11,19,38,0.92)', border: '1.5px solid var(--accent-color)', boxShadow: '0 0 18px var(--accent-glow)' }}
-            title="Abrir Reproductor"
+            onClick={() => { sounds.playClick(); setIsOpen(true); }}
+            title="Abrir Reproductor de Música (Arrastra para mover)"
+            aria-label="Abrir Reproductor de Música"
+            className={`w-12 h-12 rounded-full glass-panel bg-black/90 border flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all group cursor-pointer relative ${
+              isPlaying 
+                ? 'border-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.5)]' 
+                : 'border-cyan-500/40 hover:border-cyan-400'
+            }`}
           >
-            <Disc className={`w-5 h-5 text-[var(--accent-color)] ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '4s' }} />
-            {isPlaying && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[var(--accent-color)] animate-ping" />}
+            <div className={`w-6 h-6 text-cyan-400 flex items-center justify-center ${isPlaying ? 'animate-spin-slow' : ''}`}>
+              <Disc className="w-5 h-5" />
+            </div>
+
+            {/* Glowing active indicator dot when playing */}
+            {isPlaying && (
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-black animate-pulse" />
+            )}
           </button>
-        ) : (
-          /* Expanded pill widget */
-          <div
-            className="glass-panel border border-[var(--border-card)] rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl transition-all duration-300"
-            style={{ minWidth: '200px' }}
-          >
-            {/* Track info row */}
-            <div
-              className="flex items-center gap-2 px-3 pt-2.5 pb-1 cursor-pointer"
-              onClick={() => { sounds.playClick(); setIsOpen(true); }}
-            >
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center theme-accent-bg shrink-0">
-                <Disc className={`w-4 h-4 text-[#0b1326] ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-[var(--text-main)] truncate leading-tight">{currentTrack.title}</p>
-                <p className="text-[9px] text-[var(--text-muted)] truncate">{currentTrack.artist}</p>
-              </div>
-            </div>
-
-            {/* Progress bar */}
-            <div
-              ref={progressRef}
-              className="mx-3 mb-1 h-1 rounded-full bg-white/10 cursor-pointer overflow-hidden"
-              onClick={handleProgressClick}
-            >
-              <div
-                className="h-full rounded-full theme-accent-bg transition-all duration-300"
-                style={{ width: `${progress * 100}%` }}
-              />
-            </div>
-            <div className="flex justify-between px-3 mb-1.5">
-              <span className="text-[8px] font-mono text-[var(--text-muted)]">{formatTime(currentTime)}</span>
-              <span className="text-[8px] font-mono text-[var(--text-muted)]">{formatTime(duration)}</span>
-            </div>
-
-            {/* Controls row */}
-            <div className="flex items-center justify-between px-3 pb-2.5">
-              <button onClick={handlePrev} className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-color)] transition-colors">
-                <SkipBack className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                onClick={togglePlay}
-                className="w-7 h-7 rounded-full theme-accent-bg flex items-center justify-center active:scale-95 transition-transform"
-              >
-                {isPlaying ? <Pause className="w-3.5 h-3.5 text-[#0b1326]" /> : <Play className="w-3.5 h-3.5 text-[#0b1326] ml-0.5" />}
-              </button>
-
-              <button onClick={handleNext} className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-color)] transition-colors">
-                <SkipForward className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                onClick={() => { sounds.playClick(); setIsOpen(true); }}
-                className="p-1 text-[var(--text-muted)] hover:text-[var(--accent-color)] transition-colors"
-                title="Playlist"
-              >
-                <ListMusic className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                onClick={() => { sounds.playClick(); setIsMinimized(true); }}
-                className="p-1 text-[var(--text-muted)] hover:text-white transition-colors"
-                title="Minimizar"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
         )}
-      </div>
 
-      {/* ── Full Music Drawer Modal ── */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70 backdrop-blur-md animate-welcome-fade-in">
-          <div className="glass-card w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl border border-[var(--border-card)] shadow-2xl overflow-hidden">
-            
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[var(--border-subtle)]">
-              <div className="flex items-center gap-2 theme-accent-text">
-                <Music className="w-4 h-4" />
-                <h3 className="font-black text-base uppercase tracking-wider text-[var(--text-main)]">Reproductor &amp; Playlist</h3>
+        {/* FULL EXPANDED PLAYER WINDOW */}
+        {isOpen && (
+          <div className="w-80 sm:w-96 rounded-3xl glass-panel bg-black/90 border border-cyan-500/40 shadow-2xl space-y-3 p-4 animate-fade-in">
+            {/* Header / Drag Handle */}
+            <div className="flex justify-between items-center border-b border-white/10 pb-2.5 cursor-grab">
+              <div className="flex items-center gap-2">
+                <Move className="w-4 h-4 text-cyan-400" />
+                <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-cyan-400">
+                  REPRODUCTOR APEX SOUNDS
+                </span>
               </div>
               <button
-                onClick={() => setIsOpen(false)}
-                className="text-[var(--text-muted)] hover:text-white font-bold p-1 rounded-lg"
+                onClick={() => { sounds.playClick(); setIsOpen(false); }}
+                className="text-[var(--text-muted)] hover:text-white p-1 rounded-lg"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Now Playing */}
-            <div className="p-5 space-y-3 border-b border-[var(--border-subtle)]">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl theme-accent-bg flex items-center justify-center shrink-0 theme-accent-glow">
-                  <Disc className={`w-7 h-7 text-[#0b1326] ${isPlaying ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+            {/* Current Track Display */}
+            <div className="p-3 rounded-2xl bg-black/60 border border-white/10 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 ${isPlaying ? 'animate-spin-slow' : ''}`}>
+                  <Disc className="w-5 h-5" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-extrabold text-sm text-[var(--text-main)] truncate">{currentTrack.title}</h4>
-                  <p className="text-xs text-[var(--text-muted)] truncate">{currentTrack.artist}</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-extrabold text-xs text-white truncate">{currentTrack.title}</h4>
+                  <p className="text-[10px] text-[var(--text-muted)] font-mono truncate">{currentTrack.artist}</p>
                 </div>
               </div>
 
-              {/* Progress bar clickable */}
+              {/* Progress Bar */}
               <div>
                 <div
                   ref={progressRef}
@@ -306,113 +340,82 @@ export const BackgroundMusicPlayer: React.FC = () => {
                   onClick={handleProgressClick}
                 >
                   <div
-                    className="h-full rounded-full theme-accent-bg transition-all duration-300"
+                    className="h-full rounded-full bg-cyan-400 transition-all duration-200"
                     style={{ width: `${progress * 100}%` }}
                   />
                 </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-[9px] font-mono text-[var(--text-muted)]">{formatTime(currentTime)}</span>
-                  <span className="text-[9px] font-mono text-[var(--text-muted)]">{formatTime(duration)}</span>
+                <div className="flex justify-between mt-1 text-[9px] font-mono text-[var(--text-muted)]">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
                 </div>
               </div>
 
-              {/* Playback controls */}
+              {/* Playback Controls */}
               <div className="flex items-center justify-center gap-4">
-                <button onClick={handlePrev} className="text-[var(--text-muted)] hover:text-[var(--accent-color)] transition-colors p-2">
-                  <SkipBack className="w-5 h-5" />
+                <button onClick={handlePrev} className="text-[var(--text-muted)] hover:text-white p-1.5 cursor-pointer">
+                  <SkipBack className="w-4 h-4" />
                 </button>
                 <button
                   onClick={togglePlay}
-                  className="w-12 h-12 rounded-full theme-accent-bg flex items-center justify-center theme-accent-glow active:scale-95 transition-transform"
+                  className="w-10 h-10 rounded-xl bg-cyan-500 text-black flex items-center justify-center shadow-lg cursor-pointer hover:scale-105 active:scale-95 transition-all"
                 >
-                  {isPlaying ? <Pause className="w-5 h-5 text-[#0b1326]" /> : <Play className="w-5 h-5 text-[#0b1326] ml-0.5" />}
+                  {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-0.5" />}
                 </button>
-                <button onClick={handleNext} className="text-[var(--text-muted)] hover:text-[var(--accent-color)] transition-colors p-2">
-                  <SkipForward className="w-5 h-5" />
+                <button onClick={handleNext} className="text-[var(--text-muted)] hover:text-white p-1.5 cursor-pointer">
+                  <SkipForward className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Volume */}
-              <div className="flex items-center gap-3">
-                <button onClick={() => handleVolumeChange(isMuted || volume === 0 ? 0.5 : 0)} className="text-[var(--text-muted)]">
-                  {isMuted || volume === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              {/* Volume Slider */}
+              <div className="flex items-center gap-2 pt-1">
+                <button onClick={() => handleVolumeChange(isMuted || volume === 0 ? 0.5 : 0)} className="text-[var(--text-muted)] cursor-pointer">
+                  {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-cyan-400" />}
                 </button>
                 <input
                   type="range"
                   min="0" max="1" step="0.02"
                   value={isMuted ? 0 : volume}
                   onChange={e => handleVolumeChange(parseFloat(e.target.value))}
-                  className="flex-1 accent-[var(--accent-color)] h-1"
+                  className="flex-1 accent-cyan-400 h-1 cursor-pointer"
                 />
-                <span className="text-[9px] font-mono text-[var(--text-muted)] w-8 text-right">
-                  {Math.round((isMuted ? 0 : volume) * 100)}%
-                </span>
               </div>
             </div>
 
-            {/* Playlist */}
-            <div className="px-5 py-3 max-h-52 overflow-y-auto">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
-                Lista — {playlist.length} canciones
-              </p>
+            {/* Track List */}
+            <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
+              <span className="text-[9px] font-mono font-bold text-[var(--text-muted)] uppercase block">
+                PLAYLIST ({playlist.length})
+              </span>
               {playlist.map((track, i) => (
                 <div
                   key={track.id}
                   onClick={() => { setCurrentIdx(i); setIsPlaying(true); sounds.playClick(); }}
-                  className={`flex items-center justify-between py-2 px-2 rounded-xl cursor-pointer transition-all mb-0.5 ${
+                  className={`flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer transition-all ${
                     i === currentIdx
-                      ? 'bg-[var(--accent-color)]/15 border border-[var(--accent-color)]/40'
-                      : 'hover:bg-white/5 border border-transparent'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+                      : 'bg-black/40 text-[var(--text-muted)] border border-white/5 hover:text-white'
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <span className="text-[9px] font-bold theme-accent-text w-4 shrink-0">{i + 1}</span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-[var(--text-main)] truncate">{track.title}</p>
-                      <p className="text-[9px] text-[var(--text-muted)] truncate">{track.artist}</p>
-                    </div>
-                  </div>
+                  <span className="truncate">{track.title}</span>
                   {track.isCustom && (
-                    <button
-                      onClick={e => { e.stopPropagation(); handleDeleteTrack(track.id); sounds.playClick(); }}
-                      className="p-1 text-red-400/70 hover:text-red-400 shrink-0"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
+                    <button onClick={e => { e.stopPropagation(); handleDeleteTrack(track.id); }} className="text-red-400 p-1">
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   )}
                 </div>
               ))}
             </div>
 
-            {/* Import section */}
-            <div className="px-5 pt-2 pb-5 border-t border-[var(--border-subtle)] space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Importar Música</p>
-              
-              <label className="w-full py-2.5 rounded-xl border border-dashed border-[var(--accent-color)]/50 theme-accent-text text-xs font-bold flex items-center justify-center gap-2 cursor-pointer hover:bg-[var(--accent-color)]/10 transition-colors">
-                <Plus className="w-4 h-4" />
-                Subir MP3 / WAV / OGG desde tu dispositivo
+            {/* Custom Import */}
+            <div className="pt-2 border-t border-white/10">
+              <label className="w-full py-2 rounded-xl border border-dashed border-cyan-500/40 text-cyan-300 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer hover:bg-cyan-500/10 transition-colors">
+                <Plus className="w-3.5 h-3.5" /> Subir MP3 desde tu Dispositivo
                 <input type="file" accept="audio/*" multiple onChange={handleFileUpload} className="hidden" />
               </label>
-
-              <form onSubmit={handleAddLink} className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="URL de audio directo (.mp3)"
-                  value={newUrl}
-                  onChange={e => setNewUrl(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl text-xs bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-main)] outline-none focus:border-[var(--accent-color)] transition-colors"
-                />
-                <button
-                  type="submit"
-                  className="px-3 py-2 rounded-xl theme-accent-bg text-[#0b1326] font-bold text-xs shrink-0"
-                >
-                  Añadir
-                </button>
-              </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </>
   );
 };

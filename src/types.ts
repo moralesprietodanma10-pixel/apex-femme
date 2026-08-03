@@ -32,22 +32,7 @@ export interface ReadinessContext {
 export type ThemeColor = 'flash' | 'avengers' | 'widow' | 'hulk' | 'hawkeye';
 export type ThemeMode = 'dark' | 'light';
 
-export interface SmartwatchData {
-  connected: boolean;
-  deviceName: string;
-  batteryLevel: number;
-  heartRateBpm: number;
-  hrvMs: number;
-  stepsToday: number;
-  caloriesBurned: number;
-  distanceKm: number;
-  avgPaceMinKm: string;
-  stressScore: number;
-  sleepRecoveryScore: number;
-  heartRateZone: 'Reposo' | 'Quema Grasa' | 'Aeróbico' | 'Anaeróbico' | 'Pico VO2 Max';
-  lastSyncTime: string;
-}
-
+export type SmartwatchData = Record<string, any>;
 export type AiTone = 'gemini' | 'demanding' | 'scientific' | 'tactical';
 
 export interface ChatSession {
@@ -116,6 +101,11 @@ export interface WorkoutSetDetail {
   weightKg?: number;
   completed: boolean;
   restSeconds?: number;
+  rpe?: number;
+  rir?: number;
+  techniqueScore?: 'easy' | 'moderate' | 'hard' | 'lossOfControl';
+  loadRecommendation?: string;
+  confidencePct?: number;
 }
 
 export interface ExerciseDetail {
@@ -126,13 +116,28 @@ export interface ExerciseDetail {
   defaultWeightKg?: number;
   restSeconds: number;
   targetMuscles: string[];
+  secondaryMuscles?: string[];
+  movementPattern?: MovementPattern;
+  equipment?: string[];
   injuryPreventionTag?: string;
   techniqueTip?: string;
-  sets?: WorkoutSetDetail[];
-  /** V12 Master Sports Science Audit fields */
+  commonMistakes?: string[];
+  femaleConsiderations?: string;
   evidenceLevel?: 'Alta' | 'Moderada' | 'Limitada';
   citation?: string;
   pitchTransfer?: string;
+  regressions?: string[];
+  progressions?: string[];
+  recommendedTempo?: string;
+  rpeTarget?: number;
+  tags?: string[];
+  sets?: WorkoutSetDetail[];
+  isCustom?: boolean;
+  videoUrl?: string;
+  animationPlaceholder?: string;
+  trainingMethod?: TrainingMethod;
+  effectivenessRating?: number; // 1 to 5 stars
+  effectivenessRationale?: string;
 }
 
 export interface ScheduleDay {
@@ -148,11 +153,14 @@ export interface ScheduleDay {
   scheduledTime?: string; // e.g. "08:00", "17:30", "19:00"
   location?: TrainingLocation;
   focusArea?: TrainingFocus;
+  sessionObjective?: SessionObjective;
   notes?: string;
   exercises?: string[];   // Lista de ejercicios específicos
   exerciseDetails?: ExerciseDetail[];
+  sections?: WorkoutSection[];
   totalTonnageKg?: number;
   isImported?: boolean;
+  versionNumber?: number;
 }
 
 export interface TrainingPlanPreset {
@@ -267,7 +275,7 @@ export interface RpeCalculatorResult {
   trainingLoad: number; // RPE * minutes
 }
 
-export type ActiveTab = 'dashboard' | 'gym' | 'coach' | 'tracker' | 'card' | 'gamification' | 'mentors' | 'settings';
+export type ActiveTab = 'dashboard' | 'football' | 'gym' | 'coach' | 'tracker' | 'card' | 'gamification' | 'mentors' | 'settings';
 
 /**
  * AIConfidenceEngine — V12 AI Audit
@@ -298,6 +306,175 @@ export interface ProactiveAlert {
   actionQuery?: string;  // What to send to AI when user taps action
   priority: 'high' | 'medium' | 'low';
   icon: string;
+  whyReasoning?: string;
 }
+
+/* ═════════════════════════════════════════════════════════════
+   APEX FEMME V18 PERFORMANCE INTELLIGENCE ENGINE & PERSONAL DATA TYPES
+   ═════════════════════════════════════════════════════════════ */
+
+export type MovementPattern = 
+  | 'kneeDominant' 
+  | 'hipDominant' 
+  | 'horizontalPush' 
+  | 'horizontalPull' 
+  | 'verticalPush' 
+  | 'verticalPull' 
+  | 'singleLeg' 
+  | 'bilateral' 
+  | 'rotation' 
+  | 'antiRotation' 
+  | 'carry' 
+  | 'jump' 
+  | 'sprint';
+
+export type TrainingMethod = 
+  | 'straight' 
+  | 'superset' 
+  | 'triset' 
+  | 'giantSet' 
+  | 'circuit' 
+  | 'emom' 
+  | 'amrap' 
+  | 'cluster' 
+  | 'contrast' 
+  | 'complex' 
+  | 'dropSet' 
+  | 'restPause';
+
+export type GymSectionCategory = 
+  | 'warmup' 
+  | 'mobility' 
+  | 'activation' 
+  | 'plyometrics' 
+  | 'strength' 
+  | 'power' 
+  | 'hypertrophy' 
+  | 'core' 
+  | 'running' 
+  | 'conditioning' 
+  | 'recovery' 
+  | 'custom';
+
+export type SessionObjective = 
+  | 'maxStrength' 
+  | 'power' 
+  | 'explosiveness' 
+  | 'recovery' 
+  | 'speed' 
+  | 'mobility' 
+  | 'hypertrophy' 
+  | 'testing' 
+  | 'returnToPlay' 
+  | 'aclPrevention';
+
+export interface MyGymEquipmentItem {
+  id: string;
+  name: string;
+  category: 'barbell' | 'dumbbell' | 'machine' | 'cable' | 'cardio' | 'accessory';
+  isAvailable: boolean;
+}
+
+export interface AthletePreferences {
+  favoriteExercises: string[];
+  avoidedExercises: string[];
+  favoriteMachines: string[];
+  preferredRestSec: number;
+  preferredDurationMin: number;
+  preferredRepRange: string;
+  preferredWarmupMin: number;
+}
+
+export interface DecisionConfidence {
+  recommendation: string;
+  confidencePct: number;
+  dataPointsUsed: string[];
+  reasoning: string;
+  actionType: 'increaseWeight' | 'maintainWeight' | 'reduceLoad' | 'rotateVariation' | 'compressSession';
+}
+
+export interface PerformanceReport4Week {
+  id: string;
+  dateRange: string;
+  topImprovements: string[];
+  focusAreas: string[];
+  movementBalanceScore: number;
+  coachSummary: string;
+  nextBlockRecommendation: string;
+  confidencePct: number;
+}
+
+export interface AthleteStrengthProfile {
+  currentStrengths: string[];
+  focusAreas: string[];
+  quadToHamstringRatio: number;
+  unilateralBalancePct: number;
+  dominantQuality: string;
+}
+
+export interface HistoricalMilestone {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+  badgeIcon: string;
+  category: 'pr' | 'streak' | 'plateau' | 'volume';
+}
+
+export interface TimelineEvent {
+  id: string;
+  date: string;
+  type: 'workout' | 'pr' | 'programChange' | 'volumeMilestone' | 'exerciseSwap' | 'techniqueImprovement' | 'milestone';
+  title: string;
+  description: string;
+  badge: string;
+  highlight?: boolean;
+}
+
+export interface WorkoutQualityScore {
+  score: number; // 0 - 100
+  status: 'optimal' | 'balanced' | 'needsImprovement';
+  warnings: { message: string; fixAction: string; category: string }[];
+}
+
+export interface SessionSimulation {
+  estimatedDurationMin: number;
+  stressScore: number;
+  expectedFatigue: 'baja' | 'moderada' | 'alta';
+  recoveryHoursNeeded: number;
+  densityRepsPerMin: number;
+}
+
+export interface MuscleFatigueItem {
+  muscle: string;
+  level: 'recovered' | 'mediumFatigue' | 'highFatigue';
+  lastTrainedDaysAgo: number;
+  readinessPct: number;
+}
+
+export interface ExerciseBlock {
+  id: string;
+  name: string;
+  goal: string;
+  category: GymSectionCategory;
+  estimatedMin: number;
+  difficulty: 'Principiante' | 'Intermedio' | 'Avanzado' | 'Élite';
+  equipmentNeeded: string[];
+  targetMuscles: string[];
+  movementPatterns: MovementPattern[];
+  exercises: ExerciseDetail[];
+  isFavorite?: boolean;
+  isArchived?: boolean;
+}
+
+export interface WorkoutSection {
+  id: string;
+  title: string;
+  category: GymSectionCategory;
+  isCollapsed?: boolean;
+  exercises: ExerciseDetail[];
+  trainingMethod?: TrainingMethod;
+}
+
 
 

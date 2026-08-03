@@ -6,7 +6,7 @@ import {
   INITIAL_CHALLENGES, 
   INITIAL_BADGES 
 } from '../data/initialData';
-import { safeJsonParse, sanitizeObject } from '../utils/security';
+import { safeJsonParse, sanitizeObject, cleanObjectStrings } from '../utils/security';
 
 export const CURRENT_SCHEMA_VERSION = '1.2';
 
@@ -39,7 +39,7 @@ export function migrateProfileRecord(record: any): FullProfileRecord {
     throw new Error('Invalid profile record object');
   }
 
-  const migrated: FullProfileRecord = {
+  const rawMigrated: FullProfileRecord = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     id: record.id || generateProfileId(),
     lastActive: record.lastActive || new Date().toISOString(),
@@ -54,7 +54,7 @@ export function migrateProfileRecord(record: any): FullProfileRecord {
     badges: Array.isArray(record.badges) ? record.badges : INITIAL_BADGES
   };
 
-  return migrated;
+  return cleanObjectStrings(rawMigrated);
 }
 
 // Get all saved profiles safely with auto-migration

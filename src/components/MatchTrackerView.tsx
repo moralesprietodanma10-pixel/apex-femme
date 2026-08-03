@@ -6,10 +6,9 @@ import { Plus, Minus, ArrowRight, Brain, Trophy, ShieldCheck, CheckCircle, Activ
 interface MatchTrackerViewProps {
   onSaveMatch: (newLog: Partial<MatchLog>) => void;
   onCancel?: () => void;
-  smartwatchData?: SmartwatchData;
 }
 
-export const MatchTrackerView: React.FC<MatchTrackerViewProps> = ({ onSaveMatch, onCancel, smartwatchData }) => {
+export const MatchTrackerView: React.FC<MatchTrackerViewProps> = ({ onSaveMatch, onCancel }) => {
   const [activeTabMode, setActiveTabMode] = useState<'tracker' | 'gps'>('tracker');
 
   const [matchType, setMatchType] = useState<'PARTIDO' | 'ENTRENAMIENTO'>('PARTIDO');
@@ -87,7 +86,7 @@ export const MatchTrackerView: React.FC<MatchTrackerViewProps> = ({ onSaveMatch,
       </nav>
 
       {activeTabMode === 'gps' ? (
-        <GpsTrackerView smartwatchData={smartwatchData} />
+        <GpsTrackerView />
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Header Card */}

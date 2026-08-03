@@ -16,8 +16,6 @@ interface DashboardViewProps {
   onConfirmDayActivity: () => void;
   onSelectDay: (dayId: string) => void;
   onNavigateTab: (tab: 'coach' | 'tracker' | 'card' | 'gamification' | 'gym' | 'mentors') => void;
-  smartwatchData?: SmartwatchData;
-  onOpenSmartwatchModal?: () => void;
   onStartInteractiveWorkout?: (day: ScheduleDay) => void;
 }
 
@@ -60,13 +58,13 @@ const QuickAnswerPill: React.FC<{
     accent: 'theme-accent-text bg-[var(--accent-color)]/10 border-[var(--accent-color)]/25',
   };
   return (
-    <div className={`flex flex-col p-3 rounded-2xl border ${colorMap[color]}`}>
+    <div className={`flex flex-col p-3 rounded-2xl border ${colorMap[color]} overflow-hidden`}>
       <span className="text-[9px] font-extrabold uppercase tracking-widest opacity-70 mb-1">{question}</span>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 min-w-0">
         <span className="shrink-0">{icon}</span>
-        <span className="font-black text-sm leading-tight">{answer}</span>
+        <span className="font-black text-xs leading-snug break-words truncate max-w-full">{answer}</span>
       </div>
-      {subtext && <span className="text-[9px] opacity-60 mt-1 leading-tight">{subtext}</span>}
+      {subtext && <span className="text-[9px] opacity-60 mt-1 leading-tight truncate">{subtext}</span>}
     </div>
   );
 };
@@ -209,8 +207,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onConfirmDayActivity,
   onSelectDay,
   onNavigateTab,
-  smartwatchData,
-  onOpenSmartwatchModal,
   onStartInteractiveWorkout
 }) => {
   const [showBioDetails, setShowBioDetails] = useState(false);
@@ -229,8 +225,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const todayActivity = weeklySchedule.find(d => d.status === 'today') || weeklySchedule[2];
   const completedDays = weeklySchedule.filter(d => d.status === 'completed').length;
   const trends = playerProfile.weeklyTrends;
-  const hrv = smartwatchData?.hrvMs || 68;
-  const fc = smartwatchData?.heartRateBpm || 64;
+  const hrv = 68;
+  const fc = 64;
 
   // ─── L1: READINESS (the most important computation) ────────────────────────
   const readiness = useMemo(() => {
@@ -272,7 +268,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     const name = playerProfile.name.split(' ')[0];
     if (hrv >= 65) {
       if (pos.includes('Contención') || pos.includes('Mediocentro')) {
-        return `HRV ${hrv}ms — SNC recuperado. Ventana ideal para ${pos}: Hip Thrust + sprints de 10m hoy. Ratio I/Q objetivo ≥60%.`;
+        return `HRV ${hrv}ms — SNC recuperado. Ventana ideal para ${pos}: Escaneo visual, primer toque orientado y distribución de pase.`;
       }
       if (pos.includes('Extrema') || pos.includes('LW') || pos.includes('RW')) {
         return `HRV ${hrv}ms óptimo. Sistema ATP-PCr activo: haz aceleraciones 1v1 explosivas. Es tu mejor día de la semana.`;
@@ -298,14 +294,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   ];
 
   return (
-    <div className="space-y-4 pb-28 max-w-2xl mx-auto pt-1 animate-fade-in">
+    <div className="space-y-4 pb-40 max-w-4xl mx-auto pt-1 animate-fade-in">
 
       {/* ═══════════════════════════════════════════════════════════
           L1: ESTADO HOY — responde ¿Cómo estoy? en <3 segundos
       ═══════════════════════════════════════════════════════════ */}
       <section
         aria-label="Estado fisiológico hoy"
-        className="relative overflow-hidden rounded-3xl border border-[var(--accent-color)]/30"
+        className="relative overflow-hidden rounded-3xl border border-[var(--accent-color)]/30 hero-card-notion hero-dynamic-card"
         style={{
           background: 'linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-solid) 100%)',
           boxShadow: '0 20px 60px -20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)'
@@ -329,7 +325,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   APEX FEMME
                 </span>
                 <span className="text-[9px] font-bold text-cyan-400 px-2 py-0.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30">
-                  🌸 FASE FOLICULAR · PICO FUERZA
+                  FASE FOLICULAR · PICO FUERZA
                 </span>
               </div>
               <h1 className="text-xl md:text-2xl font-black text-[var(--text-main)] tracking-tight leading-tight">
@@ -337,8 +333,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </h1>
             </div>
 
-            {/* Readiness Score — large, instant read */}
-            <div className={`shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border-2 ${readiness.bg} ${readiness.border}`}>
+            {/* Readiness Score — Dynamic Theme HUD */}
+            <div className={`shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border-2 hero-dynamic-hud ${readiness.bg} ${readiness.border}`}>
               <span className={`text-2xl font-black font-mono leading-none ${readiness.text}`}>
                 {readiness.score}
               </span>
@@ -361,7 +357,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <QuickAnswerPill
               question="¿Qué debo hacer?"
               answer={todayActivity?.title || 'Entrenamiento hoy'}
-              subtext={todayActivity?.scheduledTime ? `⏰ ${todayActivity.scheduledTime}` : undefined}
+              subtext={todayActivity?.scheduledTime ? todayActivity.scheduledTime : undefined}
               color="accent"
               icon={<Zap className="w-4 h-4" />}
             />
@@ -375,7 +371,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <QuickAnswerPill
               question="¿Estoy mejorando?"
               answer={trends?.rating
-                ? (trends.rating.current > trends.rating.previousWeek ? '📈 Sí, mejorando' : trends.rating.current < trends.rating.previousWeek ? '📉 Bajó' : '→ Estable')
+                ? (trends.rating.current > trends.rating.previousWeek ? 'Sí, mejorando' : trends.rating.current < trends.rating.previousWeek ? 'Bajó' : '→ Estable')
                 : `OVR ${playerProfile.OVR}`}
               subtext={trends?.rating
                 ? `Rating ${trends.rating.current}/10 vs ${trends.rating.previousWeek} sem. ant.`
@@ -389,7 +385,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 ? `Carga ${weeklyLoadScore.level}`
                 : `${completedDays}/7 días`}
               subtext={weeklyLoadScore
-                ? `ACWR ${weeklyLoadScore.ratio} · ${weeklyLoadScore.warning ? '⚠️ Reducir hoy' : '✅ Zona segura'}`
+                ? `ACWR ${weeklyLoadScore.ratio} · ${weeklyLoadScore.warning ? 'Reducir hoy' : 'Zona segura'}`
                 : `${completedDays} días completados esta semana`}
               color={weeklyLoadScore?.warning ? 'amber' : 'emerald'}
               icon={<Activity className="w-4 h-4" />}
@@ -401,42 +397,92 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          {/* ── Row 3: Recommendation Banner ── */}
-          <div className={`flex items-start gap-2.5 p-3 rounded-xl border text-[11px] leading-relaxed ${readiness.bg} ${readiness.border} ${readiness.text}`}>
-            <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-bold block text-[10px] uppercase tracking-wider opacity-70 mb-0.5">APEX IA · RECOMENDACIÓN HOY</span>
-              <span className="font-medium">{aiRecommendation}</span>
+          {/* ── Row 3: AI Context Insights (Max 2 — Why, Reasoning, Action) ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className={`p-3 rounded-2xl border text-[11px] leading-relaxed ${readiness.bg} ${readiness.border} ${readiness.text} space-y-1`}>
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold uppercase tracking-wider text-[9px] flex items-center gap-1 opacity-80">
+                  <Brain className="w-3 h-3" /> AI INSIGHT #1 · CONTROL DE VOLUMEN
+                </span>
+                <span className="text-[9px] font-mono opacity-70">Confianza: 96%</span>
+              </div>
+              <p className="font-bold text-xs">"Llevas 8 días sin entrenar primer toque con pared."</p>
+              <p className="text-[10px] opacity-80 font-mono"><strong>Razonamiento:</strong> El volumen en pierna no hábil disminuyó 26% esta semana (Hewett et al., 2005).</p>
+              <p className="text-[10px] font-bold underline">→ Acción: Añadir 15 min de primer toque hoy.</p>
+            </div>
+
+            <div className="p-3 rounded-2xl border text-[11px] leading-relaxed bg-cyan-500/10 border-cyan-500/30 text-cyan-400 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold uppercase tracking-wider text-[9px] flex items-center gap-1 opacity-80">
+                  <ShieldCheck className="w-3 h-3" /> AI INSIGHT #2 · PREVENCIÓN DE LESIONES
+                </span>
+                <span className="text-[9px] font-mono opacity-70">Evidencia Alta</span>
+              </div>
+              <p className="font-bold text-xs">"Ventana óptima para fuerza unipodal."</p>
+              <p className="text-[10px] opacity-80 font-mono"><strong>Razonamiento:</strong> HRV {hrv}ms en fase folicular. Máxima tolerancia de carga de rodilla.</p>
+              <p className="text-[10px] font-bold underline">→ Acción: Mantener Sentadillas Búlgaras en 4x8 @75% 1RM.</p>
             </div>
           </div>
 
-          {/* ── Row 4: Primary Actions ── */}
+          {/* ── Row 4: Quick Session Compression & Primary Hero Actions ── */}
+          <div className="p-3 rounded-2xl bg-[var(--bg-input)] border border-[var(--border-subtle)] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-400" /> COMPRESIÓN RÁPIDA DE SESIÓN (REORGANIZACIÓN EN VIVO)
+              </span>
+              <span className="text-[9px] text-[var(--text-muted)]">¿Poco tiempo hoy?</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onStartInteractiveWorkout && todayActivity) {
+                    const compressed = {
+                      ...todayActivity,
+                      title: `${todayActivity.title} (30 min)`,
+                      durationMin: 30
+                    };
+                    onStartInteractiveWorkout(compressed);
+                  }
+                }}
+                className="flex-1 py-2 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-extrabold text-xs hover:bg-amber-500 hover:text-black transition-all flex items-center justify-center gap-1"
+              >
+                Solo tengo 30 Minutos
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (onStartInteractiveWorkout && todayActivity) {
+                    const compressed = {
+                      ...todayActivity,
+                      title: `${todayActivity.title} (45 min)`,
+                      durationMin: 45
+                    };
+                    onStartInteractiveWorkout(compressed);
+                  }
+                }}
+                className="flex-1 py-2 px-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-extrabold text-xs hover:bg-cyan-500 hover:text-black transition-all flex items-center justify-center gap-1"
+              >
+                Solo tengo 45 Minutos
+              </button>
+            </div>
+          </div>
+
+          {/* ── Row 5: Giant START TRAINING Button ── */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             {onStartInteractiveWorkout && (
               <button
                 onClick={() => onStartInteractiveWorkout(todayActivity)}
                 id="btn-start-workout"
-                className="flex-1 sm:flex-none bg-emerald-500 hover:bg-emerald-400 text-[#0b1326] px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wider transition-all duration-150 active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5"
+                className="w-full hero-button-speed theme-accent-bg text-black py-4 rounded-2xl font-black text-sm uppercase tracking-wider theme-accent-glow flex items-center justify-center gap-2 shadow-2xl cursor-pointer border-2 border-white/40"
               >
-                <Dumbbell className="w-3.5 h-3.5" />
-                Iniciar Sesión
+                <Zap className="w-5 h-5 fill-current animate-pulse" />
+                INICIAR ENTRENAMIENTO DE HOY
+                <ArrowRight className="w-5 h-5" />
               </button>
             )}
-            <button
-              onClick={onConfirmDayActivity}
-              id="btn-confirm-activity"
-              className="flex-1 sm:flex-none theme-accent-bg px-4 py-2.5 rounded-xl font-extrabold text-xs uppercase tracking-wider transition-all duration-150 active:scale-95 flex items-center justify-center gap-1.5"
-            >
-              <CalendarCheck className="w-3.5 h-3.5" />
-              Confirmar +100 XP
-            </button>
-            <button
-              onClick={() => onNavigateTab('coach')}
-              className="p-2.5 rounded-xl bg-[var(--bg-input)] border border-[var(--border-subtle)] text-[var(--text-muted)] hover:theme-accent-text hover:border-[var(--accent-color)]/50 transition-all"
-              aria-label="Consultar Coach IA"
-            >
-              <Brain className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </section>
@@ -494,9 +540,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <div className="text-left">
                 <p className="text-sm font-extrabold text-[var(--text-main)] leading-tight">Biometría</p>
                 <p className="text-[10px] text-[var(--text-muted)]">
-                  {smartwatchData?.connected
-                    ? `🟢 ${smartwatchData.deviceName}`
-                    : '⚪ Sin dispositivo · datos estimados'}
+                  Registro biológico activo
                 </p>
               </div>
             </div>
@@ -514,9 +558,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="px-4 pb-4 space-y-3 border-t border-[var(--border-subtle)] pt-3 animate-slide-up">
               <div className="grid grid-cols-3 gap-2.5">
                 {[
-                  { label: 'FC ACTUAL', value: `${smartwatchData?.connected ? smartwatchData.heartRateBpm : fc}`, unit: 'BPM', sub: smartwatchData?.connected ? smartwatchData.heartRateZone : 'Zona Reposo', color: '#EF4444', icon: <Heart className="w-3.5 h-3.5 text-red-500" />, pulse: true },
-                  { label: 'PASOS HOY', value: (smartwatchData?.connected ? smartwatchData.stepsToday || 0 : 8420).toLocaleString(), unit: '', sub: 'Meta 10,000', color: 'var(--accent-color)', icon: <Footprints className="w-3.5 h-3.5 theme-accent-text" />, pulse: false },
-                  { label: 'CALORÍAS', value: smartwatchData?.connected ? `${smartwatchData.caloriesBurned || 0}` : '1,840', unit: 'kcal', sub: 'Gasto activo', color: '#F59E0B', icon: <Flame className="w-3.5 h-3.5 text-amber-500" />, pulse: false },
+                  { label: 'FC ACTUAL', value: `${fc}`, unit: 'BPM', sub: 'Zona Reposo', color: '#EF4444', icon: <Heart className="w-3.5 h-3.5 text-red-500" />, pulse: true },
+                  { label: 'PASOS HOY', value: '8,420', unit: '', sub: 'Meta 10,000', color: 'var(--accent-color)', icon: <Footprints className="w-3.5 h-3.5 theme-accent-text" />, pulse: false },
+                  { label: 'CALORÍAS', value: '1,840', unit: 'kcal', sub: 'Gasto activo', color: '#F59E0B', icon: <Flame className="w-3.5 h-3.5 text-amber-500" />, pulse: false },
                 ].map((m) => (
                   <div key={m.label} className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border-subtle)] space-y-1">
                     <div className="flex justify-between items-center">
@@ -533,7 +577,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               {/* Steps progress bar */}
               {(() => {
-                const steps = smartwatchData?.connected ? smartwatchData.stepsToday || 0 : 8420;
+                const steps = 8420;
                 const pct = Math.min(100, Math.round((steps / 10000) * 100));
                 return (
                   <div>
@@ -550,16 +594,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
               <div className="flex items-center justify-between pt-1">
                 <div className="flex items-center gap-2.5 text-[10px] text-[var(--text-muted)]">
-                  <span>Distancia: <strong className="theme-accent-text">{(smartwatchData?.distanceKm || 6.4).toFixed(1)} km</strong></span>
+                  <span>Distancia: <strong className="theme-accent-text">6.4 km</strong></span>
                   <span>·</span>
-                  <span>Ritmo: <strong className="text-purple-400">{smartwatchData?.avgPaceMinKm || '5:15 /km'}</strong></span>
+                  <span>Ritmo: <strong className="text-purple-400">5:15 /km</strong></span>
                 </div>
-                <button
-                  onClick={onOpenSmartwatchModal}
-                  className="text-[9px] font-bold theme-accent-text hover:underline"
-                >
-                  {smartwatchData?.connected ? 'Ver más →' : '+ Conectar'}
-                </button>
               </div>
             </div>
           )}

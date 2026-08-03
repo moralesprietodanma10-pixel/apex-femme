@@ -29,7 +29,7 @@ export interface AIResponse {
  */
 export function computeConfidence(
   profile: PlayerProfile,
-  watch: SmartwatchData,
+  watch?: any,
   matchLogs?: MatchLog[]
 ): AIConfidenceEngine {
   let score = 0;
@@ -92,11 +92,11 @@ export function computeConfidence(
  */
 export function generateProactiveAlerts(
   profile: PlayerProfile,
-  watch: SmartwatchData,
+  watch?: any,
   matchLogs?: MatchLog[]
 ): ProactiveAlert[] {
   const alerts: ProactiveAlert[] = [];
-  const hrv = watch.hrvMs || 68;
+  const hrv = watch?.hrvMs || 68;
   const trends = profile.weeklyTrends;
 
   // 1. Overtraining risk detection
@@ -218,7 +218,7 @@ function evidenceBadge(level: 'Alta' | 'Moderada' | 'Limitada', ref?: string): s
 export function generateAIResponse(
   input: string,
   profile: PlayerProfile,
-  watch: SmartwatchData,
+  watch?: any,
   matchLogs?: MatchLog[]
 ): AIResponse {
   const q = input.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');

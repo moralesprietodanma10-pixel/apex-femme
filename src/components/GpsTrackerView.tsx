@@ -18,7 +18,6 @@ import {
 } from 'lucide-react';
 
 interface GpsTrackerViewProps {
-  smartwatchData?: SmartwatchData;
   onSaveSession?: (sessionData: any) => void;
 }
 
@@ -31,7 +30,6 @@ interface GpsPoint {
 }
 
 export const GpsTrackerView: React.FC<GpsTrackerViewProps> = ({
-  smartwatchData,
   onSaveSession
 }) => {
   const [isTracking, setIsTracking] = useState(false);
@@ -82,7 +80,7 @@ export const GpsTrackerView: React.FC<GpsTrackerViewProps> = ({
               lng,
               timestamp: new Date().toISOString(),
               speedKmH: Number(speed.toFixed(1)),
-              bpm: smartwatchData?.heartRateBpm || 142
+              bpm: 142
             };
 
             // Calculate distance from previous point if exists
@@ -127,7 +125,7 @@ export const GpsTrackerView: React.FC<GpsTrackerViewProps> = ({
           lng: baseLng,
           timestamp: new Date().toISOString(),
           speedKmH: speed,
-          bpm: smartwatchData?.heartRateBpm || Math.floor(Math.random() * 20 + 135)
+          bpm: Math.floor(Math.random() * 20 + 135)
         }
       ]);
     }, 2000);
@@ -320,13 +318,6 @@ export const GpsTrackerView: React.FC<GpsTrackerViewProps> = ({
             <Compass className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
             Trazado de Coordenadas Lat/Lon ({gpsPoints.length} puntos)
           </span>
-
-          {smartwatchData?.connected && (
-            <span className="text-[10px] font-mono font-bold bg-black/60 backdrop-blur px-2.5 py-1 rounded-lg text-white border border-white/20 flex items-center gap-1">
-              <Heart className="w-3.5 h-3.5 text-red-500 animate-pulse" />
-              {smartwatchData.deviceName}: {smartwatchData.heartRateBpm} BPM
-            </span>
-          )}
         </div>
 
         {/* 2D Polyline Route Path SVG Overlay */}

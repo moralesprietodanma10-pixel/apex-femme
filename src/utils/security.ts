@@ -4,17 +4,47 @@
  */
 
 /**
- * Sanitizes input string to prevent XSS script injection
+ * Cleans any recursively encoded HTML entities (e.g. &amp;amp;amp;&#x2F;) back to normal text (& or /)
+ */
+export function cleanCorruptedEntities(str: string): string {
+  if (!str || typeof str !== 'string') return str;
+  let s = str;
+  // Strip repeated &amp; or HTML entity sequences
+  s = s.replace(/(&amp;)+/gi, '&');
+  s = s.replace(/&#x2F;/gi, '/');
+  s = s.replace(/&#x27;/gi, "'");
+  s = s.replace(/&quot;/gi, '"');
+  s = s.replace(/&lt;/gi, '<');
+  s = s.replace(/&gt;/gi, '>');
+  return s;
+}
+
+/**
+ * Sanitizes input string to prevent XSS script injection without double-encoding plain text
  */
 export function sanitizeString(str: string): string {
-  if (!str) return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
+  if (!str || typeof str !== 'string') return '';
+  const cleaned = cleanCorruptedEntities(str);
+  return cleaned.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+}
+
+/**
+ * Recursively cleans corrupted HTML entity strings in saved data objects
+ */
+export function cleanObjectStrings<T>(obj: T): T {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string') return cleanCorruptedEntities(obj) as unknown as T;
+  if (typeof obj !== 'object') return obj;
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => cleanObjectStrings(item)) as unknown as T;
+  }
+
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    result[key] = cleanObjectStrings(value);
+  }
+  return result as T;
 }
 
 /**

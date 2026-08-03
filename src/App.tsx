@@ -13,8 +13,7 @@ import {
   ChatMessage, 
   Challenge, 
   Badge, 
-  ActiveTab,
-  SmartwatchData
+  ActiveTab
 } from './types';
 import { 
   INITIAL_PLAYER_PROFILE, 
@@ -31,7 +30,6 @@ import { ToastNotification, ToastData } from './components/ToastNotification';
 import { OfflineBanner } from './components/OfflineBanner';
 
 import { ResetConfirmModal } from './components/ResetConfirmModal';
-import { SmartwatchSyncModal } from './components/SmartwatchSyncModal';
 import { BackgroundMusicPlayer } from './components/BackgroundMusicPlayer';
 import { ThemeBackground } from './components/ThemeBackground';
 import { InteractiveWorkoutModal } from './components/InteractiveWorkoutModal';
@@ -39,6 +37,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { SkeletonLoader } from './components/SkeletonLoader';
 import { sounds } from './services/soundEffects';
 import { generateAIResponse } from './services/aiEngineService';
+
+import { FootballLabView } from './components/FootballLabView';
 
 // Code-splitting via React.lazy for optimized bundle size & fast TTI
 const DashboardView = lazy(() => import('./components/DashboardView').then(m => ({ default: m.DashboardView })));
@@ -117,28 +117,6 @@ export default function App() {
     setActiveProfileId(null);
     setActiveProfileIdState(null);
     setIsLoggedIn(false);
-  };
-
-  // Smartwatch BLE Telemetry State - Defaults to DISCONNECTED (Real BLE mode)
-  const [smartwatchData, setSmartwatchData] = useState<SmartwatchData>({
-    connected: false,
-    deviceName: 'Sin dispositivo enlazado',
-    batteryLevel: 0,
-    heartRateBpm: 0,
-    hrvMs: 0,
-    stepsToday: 0,
-    caloriesBurned: 0,
-    distanceKm: 0,
-    avgPaceMinKm: '0:00 /km',
-    stressScore: 0,
-    sleepRecoveryScore: 0,
-    heartRateZone: 'Reposo',
-    lastSyncTime: 'No sincronizado'
-  });
-  const [isSmartwatchModalOpen, setIsSmartwatchModalOpen] = useState(false);
-
-  const handleUpdateSmartwatchData = (data: Partial<SmartwatchData>) => {
-    setSmartwatchData(prev => ({ ...prev, ...data }));
   };
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -299,7 +277,7 @@ export default function App() {
 
     setTimeout(() => {
       // V12: Pass matchLogs for richer context and higher confidence scores
-      const response = generateAIResponse(userText, playerProfile, smartwatchData, matchLogs);
+      const response = generateAIResponse(userText, playerProfile, undefined, matchLogs);
 
       const currentTone = playerProfile.aiTone || 'gemini';
       const headers: Record<string, string> = {
@@ -345,7 +323,7 @@ export default function App() {
       };
       setChatHistory((prev) => [...prev, aiMsg]);
     }, delay);
-  }, [playerProfile, smartwatchData, matchLogs]);
+  }, [playerProfile, matchLogs]);
 
 
   // Recalculate Week with AI
@@ -590,8 +568,6 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onUpdateProfile={handleUpdateProfile}
-        smartwatchData={smartwatchData}
-        onOpenSmartwatchModal={() => setIsSmartwatchModalOpen(true)}
       />
 
       {/* Main Content Area Wrapped with Error Boundary & Lazy Loaded Views */}
@@ -605,8 +581,14 @@ export default function App() {
                 onConfirmDayActivity={handleConfirmDayActivity}
                 onSelectDay={handleSelectDay}
                 onNavigateTab={setActiveTab}
-                smartwatchData={smartwatchData}
-                onOpenSmartwatchModal={() => setIsSmartwatchModalOpen(true)}
+                onStartInteractiveWorkout={handleStartInteractiveWorkout}
+              />
+            )}
+
+            {activeTab === 'football' && (
+              <FootballLabView
+                playerProfile={playerProfile}
+                onUpdateProfile={handleUpdateProfile}
                 onStartInteractiveWorkout={handleStartInteractiveWorkout}
               />
             )}
@@ -626,7 +608,6 @@ export default function App() {
                 onSendMessage={handleSendMessage}
                 onRecalculateWeek={handleRecalculateWeek}
                 onUpdateWeeklySchedule={handleUpdateWeeklySchedule}
-                smartwatchData={smartwatchData}
               />
             )}
 
@@ -642,7 +623,6 @@ export default function App() {
               <MatchTrackerView
                 onSaveMatch={handleSaveMatch}
                 onCancel={() => setActiveTab('dashboard')}
-                smartwatchData={smartwatchData}
               />
             )}
 
@@ -680,14 +660,6 @@ export default function App() {
         isOpen={isResetModalOpen}
         onClose={() => setIsResetModalOpen(false)}
         onConfirmReset={handleConfirmReset}
-      />
-
-      {/* Smartwatch Bluetooth Sync Modal */}
-      <SmartwatchSyncModal
-        isOpen={isSmartwatchModalOpen}
-        onClose={() => setIsSmartwatchModalOpen(false)}
-        smartwatchData={smartwatchData}
-        onUpdateSmartwatchData={handleUpdateSmartwatchData}
       />
 
       {/* Interactive Live Workout Modal */}
